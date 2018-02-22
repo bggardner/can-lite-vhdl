@@ -8,3 +8,5 @@ This code provides a simple FIFO interface to a CAN controller. It was developed
 `src/CanLite.vhd` contains the top-level VHDL module (CanLite), as well as the submodules it depends on.
 
 `test/CanLite_tb.vhd` is a simple testbench that connects two nodes on a virtual CAN bus.
+
+Please excuse the mixed coding styles, as this code was adapted multiple times (see `src/CanLite.vhd`).  The top-level file uses the coding style of GRC-PLC-CDD, which is an internal NASA document.
