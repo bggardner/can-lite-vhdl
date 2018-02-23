@@ -43,7 +43,7 @@ architecture Behavioral of CanLite_tb is
     signal TxAck                : std_logic;
     signal Node1Status          : CanBus.Status;
     signal CanRx                : std_logic;
-    signal CanTx_Node1, CanTx_Node2 : std_logic;
+    signal CanTx_Node1, CanTx_Node2, CanTx_Stimulus : std_logic;
 begin
     Node1 : CanLite
     generic map (
@@ -95,9 +95,10 @@ begin
             CanTx => CanTx_Node2
         );
 
-    AppClock <= CanClock;
-    CanRx <= CanTx_Node1 and CanTx_Node2;
+    AppClock <= CanClock; --! Application clock may be different than CAN base Clock
+    CanRx <= CanTx_Node1 and CanTx_Node2 and CanTx_Stimulus; --! Virtual CAN bus
 
+    --! Generate 24MHz clock for CAN base clock
     process
     begin
         CanClock <= '0';
@@ -106,9 +107,12 @@ begin
         wait for 20.833ns;
     end process;
     
+    --! Primary stimulus
     process
     begin
+        --! Initialize
         Reset_n <= '0';
+        CanTx_Stimulus <= '1';
         TxStrobe <= '0';
         TxFrame <= (
             Id => (others => '0'),
@@ -120,6 +124,8 @@ begin
         wait for 1us;
         Reset_n <= '1';
         wait until CanBus."/="(Node1Status.State, CanBus.STATE_RESET);
+        
+        --! Send 0 byte message
         wait until falling_edge(AppClock);
         TxFrame <= (
             Id => b"11001011001",
@@ -130,16 +136,24 @@ begin
         TxStrobe <= '1';
         wait until falling_edge(AppClock);
         TxStrobe <= '0';
+        
+        --! Send 8 byte message
         wait until falling_edge(AppClock);
         TxFrame <= (
             Id => b"00000000001",
             Rtr => '0',
-            Dlc => b"1111",
+            Dlc => b"1111", --! b"1xxx" interpreted as 8 bytes
             Data => (others => (others => '1'))
         );
         TxStrobe <= '1';
         wait until falling_edge(AppClock);
         TxStrobe <= '0';
+        
+        --! Test bus off
+        wait for 30us;
+        CanTx_Stimulus <= '0';
+        wait until CanBus."="(Node1Status.State, CanBus.STATE_BUS_OFF);
+        CanTx_Stimulus <= '1';
         wait;
     end process;
 

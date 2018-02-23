@@ -60,7 +60,7 @@ entity CanLite is
     );
     port (
         AppClock    : in  std_logic; --! Application clock
-        Reset_n     : in  std_logic;
+        Reset_n     : in  std_logic; --! Active-low reset
         
         RxFrame     : out CanBus.Frame; --! CAN frame read from RX FIFO buffer
         RxStrobe    : in  std_logic; --! High pulse for reading RxFrame from FIFO buffer
@@ -122,7 +122,7 @@ architecture Behavioral of CanLite is
             rx_inter                : out std_logic;
             set_reset_mode          : out std_logic;
             node_bus_off            : out std_logic;
-            ErrorWarning            : out std_logic;
+            error_status            : out std_logic;
             rx_err_cnt              : out unsigned(7 downto 0);
             tx_err_cnt              : out unsigned(7 downto 0);
             transmit_status         : out std_logic;
@@ -132,11 +132,11 @@ architecture Behavioral of CanLite is
             node_error_passive      : out std_logic;
             tx                      : out std_logic;
             tx_next                 : out std_logic;
-            bus_off                 : out std_logic;
             go_overload_frame       : out std_logic;
             go_error_frame          : out std_logic;
             go_tx                   : out std_logic;
-            send_ack                : out std_logic);
+            send_ack                : out std_logic
+        );
     end component CanLiteBitStreamProcessor;
 
     component CanLiteBitTimingLogic
@@ -171,22 +171,15 @@ architecture Behavioral of CanLite is
         );
     end component CanLiteBitTimingLogic;
 
-    signal rst                      :  std_logic;
-    signal RxFrame_q, TxFrame_q     :  CanBus.Frame;
-    signal BusOff                   :  std_logic;
-       
-   -- Mode register 
-    signal reset_mode               :  std_logic;
-    
-   -- Command register   
-    signal TxRequest   :  std_logic;
-    
-    signal TxFifoEmpty, RxFifoFull  :  std_logic;
-    signal TxFifoReadEnable, RxFifoWriteEnable         :  std_logic;
-    signal tx_state                 :  std_logic;   
-    signal tx_state_q               :  std_logic;              
+    signal rst                      :  std_logic; --! Not Reset_n (asynchronous)
+    signal reset_mode               :  std_logic; --! Synchronous reset pulse
+    signal CanRx_q, CanRx_q_q, CanTx_q  :  std_logic; --! Registered CAN signals
+    signal RxFrame_q, TxFrame_q     :  CanBus.Frame; --! FIFO input/output data
+    signal TxRequest                :  std_logic; --! New message ready for bit stream processor
+    signal TxFifoEmpty, RxFifoFull  :  std_logic; --! FIFO flags
+    signal TxFifoReadEnable, RxFifoWriteEnable  :  std_logic; --! FIFO control
   
-   -- Output signals from can_btl module 
+   -- Output signals from CanLiteBitTimingLogic module 
     signal sample_point             :  std_logic;   
     signal sampled_bit              :  std_logic;   
     signal sampled_bit_q            :  std_logic;   
@@ -194,6 +187,8 @@ architecture Behavioral of CanLite is
     signal hard_sync                :  std_logic;
     
    -- Outputs from CanLiteBitStreamProcessor 
+    signal tx_state                 :  std_logic;   
+    signal tx_state_q               :  std_logic;              
     signal rx_idle                  :  std_logic;   
     signal transmitting             :  std_logic;   
     signal transmitter              :  std_logic;   
@@ -202,7 +197,7 @@ architecture Behavioral of CanLite is
     signal rx_inter                 :  std_logic;   
     signal set_reset_mode           :  std_logic;   
     signal node_bus_off             :  std_logic;   
-    signal ErrorWarning             :  std_logic;   
+    signal error_status             :  std_logic;   
     signal rx_err_cnt               :  unsigned(7 downto 0);   
     signal tx_err_cnt               :  unsigned(7 downto 0);   
     signal rx_err_cnt_dummy         :  std_logic;   --  The MSB is not displayed. It is just used for easier calculation (no counter overflow).
@@ -218,50 +213,17 @@ architecture Behavioral of CanLite is
     signal go_tx                    :  std_logic;   
     signal send_ack                 :  std_logic;
     
-    signal CanRx_q, CanRx_q_q       :  std_logic; 
-    signal CanTx_q                  :  std_logic;      
-
 begin
-    TxFifo : CanFifo
-        generic map (
-            DEPTH => 2
-        )
-        port map (
-            Clock => AppClock,
-            Reset_n => Reset_n,
-            FrameIn => TxFrame,
-            WriteEnable => TxStrobe,
-            ReadEnable => TxFifoReadEnable,
-            FrameOut => TxFrame_q,
-            Full => TxFifoFull,
-            Empty => TxFifoEmpty
-        );
-        
-    RxFifo : CanFifo
-        generic map (
-            DEPTH => 2
-        )
-        port map (
-            Clock => AppClock,
-            Reset_n => Reset_n,
-            FrameIn => RxFrame_q,
-            WriteEnable => RxFifoWriteEnable,
-            ReadEnable => RxStrobe,
-            FrameOut => RxFrame,
-            Full => RxFifoFull,
-            Empty => RxFifoEmpty
-        );
-        
     rst <= not Reset_n;
     RxFifoWriteEnable <= go_rx_inter and not tx_state;
     TxAck <= tx_successful;
     CanTx <= CanTx_q;
     Status.State <=
         CanBus.STATE_RESET when Reset_n = '0' else
-        CanBus.STATE_BUS_OFF when BusOff = '1' else
+        CanBus.STATE_BUS_OFF when node_bus_off = '1' else
         CanBus.STATE_ERROR_PASSIVE when node_error_passive = '1' else
         CanBus.STATE_ERROR_ACTIVE;
-    Status.ErrorWarning <= ErrorWarning;
+    Status.ErrorWarning <= error_status;
 
     --! Reset pulse required for bit stream processor
     process (AppClock, Reset_n)
@@ -326,6 +288,36 @@ begin
         end if;
     end process;
        
+    TxFifo : CanFifo
+        generic map (
+            DEPTH => 2
+        )
+        port map (
+            Clock => AppClock,
+            Reset_n => Reset_n,
+            FrameIn => TxFrame,
+            WriteEnable => TxStrobe,
+            ReadEnable => TxFifoReadEnable,
+            FrameOut => TxFrame_q,
+            Full => TxFifoFull,
+            Empty => TxFifoEmpty
+        );
+        
+    RxFifo : CanFifo
+        generic map (
+            DEPTH => 2
+        )
+        port map (
+            Clock => AppClock,
+            Reset_n => Reset_n,
+            FrameIn => RxFrame_q,
+            WriteEnable => RxFifoWriteEnable,
+            ReadEnable => RxStrobe,
+            FrameOut => RxFrame,
+            Full => RxFifoFull,
+            Empty => RxFifoEmpty
+        );
+        
     BitTimingLogic : CanLiteBitTimingLogic
         generic map (
             BAUD_RATE_PRESCALAR => BAUD_RATE_PRESCALAR,
@@ -379,7 +371,7 @@ begin
             rx_inter => rx_inter,
             set_reset_mode => set_reset_mode,
             node_bus_off => node_bus_off,
-            ErrorWarning => ErrorWarning,
+            error_status => error_status,
             rx_err_cnt => rx_err_cnt,
             tx_err_cnt => tx_err_cnt,
             transmit_status => transmit_status,
@@ -391,7 +383,6 @@ begin
             RxFrame => RxFrame_q,
             tx => CanTx_q,
             tx_next => tx_next,
-            bus_off => BusOff,
             go_overload_frame => go_overload_frame,
             go_error_frame => go_error_frame,
             go_tx => go_tx,
@@ -870,7 +861,7 @@ entity CanLiteBitStreamProcessor is
         rx_inter                : out std_logic;
         set_reset_mode          : out std_logic;
         node_bus_off            : out std_logic;
-        ErrorWarning            : out std_logic;
+        error_status            : out std_logic;
         rx_err_cnt              : out unsigned(7 downto 0);
         tx_err_cnt              : out unsigned(7 downto 0);
         transmit_status         : out std_logic;
@@ -880,7 +871,6 @@ entity CanLiteBitStreamProcessor is
         node_error_passive      : out std_logic;
         tx                      : out std_logic;
         tx_next                 : out std_logic;
-        bus_off                 : out std_logic;
         go_overload_frame       : out std_logic;
         go_error_frame          : out std_logic;
         go_tx                   : out std_logic;
@@ -1073,7 +1063,7 @@ begin
     rx_inter <= rx_inter_xhdl11;
     set_reset_mode <= set_reset_mode_xhdl12;
     node_bus_off <= node_bus_off_xhdl13;
-    ErrorWarning <= '1' when (rx_err_cnt_xhdl15 > 96) or (tx_err_cnt_xhdl16 > 96) else '0';
+    error_status <= '1' when (rx_err_cnt_xhdl15 > 96) or (tx_err_cnt_xhdl16 > 96) else '0';
     rx_err_cnt <= rx_err_cnt_xhdl15(7 downto 0);
     tx_err_cnt <= tx_err_cnt_xhdl16(7 downto 0);
     transmit_status <= transmitting_q;
@@ -1083,7 +1073,6 @@ begin
     node_error_passive <= node_error_passive_xhdl26;
     tx <= tx_xhdl29;
     tx_next <= tx_next_xhdl30;
-    bus_off <= node_bus_off_xhdl13;
     go_overload_frame <= go_overload_frame_xhdl32;
     go_error_frame <= go_error_frame_xhdl33;
     go_tx <= go_tx_xhdl34;
