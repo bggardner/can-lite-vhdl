@@ -290,7 +290,7 @@ begin
        
     TxFifo : CanFifo
         generic map (
-            DEPTH => 2
+            DEPTH => FIFO_DEPTH
         )
         port map (
             Clock => AppClock,
@@ -305,7 +305,7 @@ begin
         
     RxFifo : CanFifo
         generic map (
-            DEPTH => 2
+            DEPTH => FIFO_DEPTH
         )
         port map (
             Clock => AppClock,
