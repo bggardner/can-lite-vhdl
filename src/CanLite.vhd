@@ -50,8 +50,7 @@ use ieee.numeric_std.all;
 use work.CanBus;
 
 entity CanLite is
-    generic ( --! Default configuration register values
-        FIFO_DEPTH                  : positive;
+    generic (
         BAUD_RATE_PRESCALAR         : positive range 1 to 64 := 1;
         SYNCHRONIZATION_JUMP_WIDTH  : positive range 1 to 4 := 3;
         TIME_SEGMENT_1              : positive range 1 to 16 := 8;
@@ -59,21 +58,20 @@ entity CanLite is
         TRIPLE_SAMPLING             : boolean := true
     );
     port (
-        AppClock    : in  std_logic; --! Application clock
-        Reset_n     : in  std_logic; --! Active-low reset
+        Clock               : in  std_logic; --! Base clock for CAN timing (24MHz recommended)
+        Reset_n             : in  std_logic; --! Active-low reset
         
-        RxFrame     : out CanBus.Frame; --! CAN frame read from RX FIFO buffer
-        RxStrobe    : in  std_logic; --! High pulse for reading RxFrame from FIFO buffer
-        RxFifoEmpty : out std_logic; --! Empty flag of RX FIFO buffer
+        RxFrame             : out CanBus.Frame; --! To RX FIFO
+        RxFifoWriteEnable   : out std_logic; --! To RX FIFO
+        RxFifoFull          : in  std_logic; --! From RX FIFO
                 
-        TxFrame     : in  CanBus.Frame; --! CAN frame to be loaded into TX FIFO buffer
-        TxStrobe    : in  std_logic; --! High pulse for loading TxFrame into FIFO buffer
-        TxFifoFull  : out std_logic; --! High if TxFifo is full
-        TxAck       : out std_logic; --! High pulse when a message was successfully transmitted
+        TxFrame             : in  CanBus.Frame; --! From TX FIFO
+        TxFifoReadEnable    : out std_logic; --! To TX FIFO
+        TxFifoEmpty         : in std_logic; --! From TX FIFO
+        TxAck               : out std_logic; --! High pulse when a message was successfully transmitted
         
         Status      : out CanBus.Status; --! See CanBus_pkg.vhdl
         
-        CanClock    : in  std_logic; --! Base clock for CAN timing (24MHz recommended)
         CanRx       : in  std_logic; --! RX input from CAN transceiver
         CanTx       : out std_logic --! TX output to CAN transceiver
     );
@@ -82,17 +80,18 @@ end entity CanLite;
 architecture Behavioral of CanLite is
     component CanFifo is
         generic (
-            DEPTH   : positive
-            );
+            DEPTH_WIDTH : positive
+        );
         port (
-            Clock       : in  std_logic;
             Reset_n     : in  std_logic;
-            FrameIn     : in  CanBus.Frame;
-            WriteEnable : in  std_logic;
+            ReadClock   : in  std_logic;
             ReadEnable  : in  std_logic;
             FrameOut    : out CanBus.Frame;
-            Full        : out std_logic;
-            Empty       : out std_logic
+            Empty       : out std_logic;
+            WriteClock  : in  std_logic;
+            WriteEnable : in  std_logic;
+            FrameIn     : in  CanBus.Frame;
+            Full        : out std_logic
         );
     end component CanFifo;
 
@@ -174,10 +173,8 @@ architecture Behavioral of CanLite is
     signal rst                      :  std_logic; --! Not Reset_n (asynchronous)
     signal reset_mode               :  std_logic; --! Synchronous reset pulse
     signal CanRx_q, CanRx_q_q, CanTx_q  :  std_logic; --! Registered CAN signals
-    signal RxFrame_q, TxFrame_q     :  CanBus.Frame; --! FIFO input/output data
+    signal RxFifoWriteEnable_d, TxFifoReadEnable_d  : std_logic; --! Output buffers
     signal TxRequest                :  std_logic; --! New message ready for bit stream processor
-    signal TxFifoEmpty, RxFifoFull  :  std_logic; --! FIFO flags
-    signal TxFifoReadEnable, RxFifoWriteEnable  :  std_logic; --! FIFO control
   
    -- Output signals from CanLiteBitTimingLogic module 
     signal sample_point             :  std_logic;   
@@ -215,7 +212,9 @@ architecture Behavioral of CanLite is
     
 begin
     rst <= not Reset_n;
-    RxFifoWriteEnable <= go_rx_inter and not tx_state;
+    RxFifoWriteEnable <= RxFifoWriteEnable_d;
+    RxFifoWriteEnable_d <= go_rx_inter and not tx_state;
+    TxFifoReadEnable <= TxFifoReadEnable_d;
     TxAck <= tx_successful;
     CanTx <= CanTx_q;
     Status.State <=
@@ -226,11 +225,11 @@ begin
     Status.ErrorWarning <= error_status;
 
     --! Reset pulse required for bit stream processor
-    process (AppClock, Reset_n)
+    process (Clock, Reset_n)
     begin
         if Reset_n = '0' then
             reset_mode <= '1';
-        elsif rising_edge(AppClock) then
+        elsif rising_edge(Clock) then
             if set_reset_mode = '1' then
                 reset_mode <= '1';
             elsif reset_mode = '1' then
@@ -240,34 +239,34 @@ begin
     end process;
     
     --! Double-buffer CAN RX signal
-    process (AppClock, Reset_n)
+    process (Clock, Reset_n)
     begin
         if (Reset_n = '0') then
             CanRx_q <= '1';
             CanRx_q_q <= '1';
-        elsif (rising_edge(AppClock)) then
+        elsif (rising_edge(Clock)) then
             CanRx_q <= CanRx;
             CanRx_q_q <= CanRx_q;
         end if;
     end process;
 
     --! Tx FIFO control
-    process (AppClock, Reset_n)
+    process (Clock, Reset_n)
     begin
         if Reset_n = '0' then
-            TxFifoReadEnable <= '0';
+            TxFifoReadEnable_d <= '0';
             TxRequest <= '0';
-        elsif rising_edge(AppClock) then
+        elsif rising_edge(Clock) then
             if (
                 TxRequest = '1' or --! Active request
                 need_to_tx = '1' or --! Processing request 
-                TxFifoReadEnable = '1' --! Single pulse
+                TxFifoReadEnable_d = '1' --! Single pulse
             ) then
-                TxFifoReadEnable <= '0';
+                TxFifoReadEnable_d <= '0';
             elsif TxFifoEmpty = '0' then --! New request
-                TxFifoReadEnable <= '1';
+                TxFifoReadEnable_d <= '1';
             end if;
-            if TxFifoReadEnable = '1' then --! Delay by one clock cycle
+            if TxFifoReadEnable_d = '1' then --! Delay by one clock cycle
                 TxRequest <= '1';
             elsif need_to_tx = '1' then --! Request acknowledged
                 TxRequest <= '0';
@@ -275,48 +274,18 @@ begin
         end if;
     end process;
     
-    process (AppClock, Reset_n)
+    process (Clock, Reset_n)
     begin
         if Reset_n = '0' then
             Status.Overflow <= '0';
-        elsif rising_edge(AppClock) then
-            if RxFifoWriteEnable = '1' and RxFifoFull = '1' then
+        elsif rising_edge(Clock) then
+            if RxFifoWriteEnable_d = '1' and RxFifoFull = '1' then
                 Status.Overflow <= '1';
             elsif RxFifoFull = '0' then
                 Status.Overflow <= '0';
             end if;
         end if;
     end process;
-       
-    TxFifo : CanFifo
-        generic map (
-            DEPTH => FIFO_DEPTH
-        )
-        port map (
-            Clock => AppClock,
-            Reset_n => Reset_n,
-            FrameIn => TxFrame,
-            WriteEnable => TxStrobe,
-            ReadEnable => TxFifoReadEnable,
-            FrameOut => TxFrame_q,
-            Full => TxFifoFull,
-            Empty => TxFifoEmpty
-        );
-        
-    RxFifo : CanFifo
-        generic map (
-            DEPTH => FIFO_DEPTH
-        )
-        port map (
-            Clock => AppClock,
-            Reset_n => Reset_n,
-            FrameIn => RxFrame_q,
-            WriteEnable => RxFifoWriteEnable,
-            ReadEnable => RxStrobe,
-            FrameOut => RxFrame,
-            Full => RxFifoFull,
-            Empty => RxFifoEmpty
-        );
         
     BitTimingLogic : CanLiteBitTimingLogic
         generic map (
@@ -327,7 +296,7 @@ begin
             TRIPLE_SAMPLING => TRIPLE_SAMPLING
         )
         port map (
-            clk => AppClock,
+            clk => Clock,
             rst => rst,
             rx => CanRx_q_q,
             tx => CanTx_q,
@@ -352,7 +321,7 @@ begin
    
     BitStreamProcessor : CanLiteBitStreamProcessor
         port map (
-            clk => AppClock,
+            clk => Clock,
             rst => rst,
             sample_point => sample_point,
             sampled_bit => sampled_bit,
@@ -379,8 +348,8 @@ begin
             tx_successful => tx_successful,
             need_to_tx => need_to_tx,
             node_error_passive => node_error_passive,
-            TxFrame => TxFrame_q,
-            RxFrame => RxFrame_q,
+            TxFrame => TxFrame,
+            RxFrame => RxFrame,
             tx => CanTx_q,
             tx_next => tx_next,
             go_overload_frame => go_overload_frame,
@@ -388,73 +357,6 @@ begin
             go_tx => go_tx,
             send_ack => send_ack
         ); 
-end architecture Behavioral;
-
-
-library ieee;
-use ieee.std_logic_1164.all;
-use work.CanBus;
-
-entity CanFifo is
-    generic (
-        DEPTH   : positive := 8
-    );
-    port (
-        Clock       : in  std_logic;
-        Reset_n     : in  std_logic;
-        FrameIn     : in  CanBus.Frame;
-        WriteEnable : in  std_logic;
-        ReadEnable  : in  std_logic;
-        FrameOut    : out CanBus.Frame;
-        Full        : out std_logic;
-        Empty       : out std_logic
-    );
-end entity CanFifo;
-
--- This architecture requires a one clock cycle data hold time before WriteEnable is asserted
-architecture Behavioral of CanFifo is
-    type MemoryType is array (0 to DEPTH - 1) of CanBus.Frame;
-    signal Memory     : MemoryType;
-    signal Counter    : natural range 0 to DEPTH;
-    signal ReadIndex, WriteIndex   : natural range 0 to DEPTH - 1;
-    signal Full_d, Empty_d  : std_logic;
-begin
-    FrameOut <= Memory(ReadIndex);
-    Full <= Full_d;
-    Empty <= Empty_d;
-    Full_d <= '1' when Counter = DEPTH else '0';
-    Empty_d <= '1' when Counter = 0 else '0';
-
-    process (Clock, Reset_n)
-    begin
-        if Reset_n = '0' then
-            Counter <= 0;
-            ReadIndex <= DEPTH - 1;
-            WriteIndex <= 0;
-            Memory <= (others => (Id => (others => '0'), Rtr => '0', Dlc => (others => '0'), Data => (others => (others => '0')))); 
-        elsif rising_edge(Clock) then
-            if WriteEnable = '1' and Full_d = '0' and ReadEnable = '0' then
-                Counter <= Counter + 1;
-            elsif WriteEnable = '0' and ReadEnable = '1' and Empty_d = '0' then
-                Counter <= Counter - 1;
-            end if;
-            if WriteEnable = '1' and Full_d = '0' then
-                Memory(WriteIndex) <= FrameIn;
-                if WriteIndex = DEPTH - 1 then
-                    WriteIndex <= 0;
-                else
-                    WriteIndex <= WriteIndex + 1;
-                end if;
-            end if;
-            if ReadEnable = '1' and Empty_d = '0' then
-                if ReadIndex = DEPTH - 1 then
-                    ReadIndex <= 0;
-                else
-                    ReadIndex <= ReadIndex + 1;
-                end if;
-            end if;
-        end if;
-    end process;
 end architecture Behavioral;
 
 
