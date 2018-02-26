@@ -8,7 +8,7 @@
 --//  By:  Igor Mohor                                             ////
 --//       igorm@opencores.org                                    ////
 --//                                                              ////
---//  Which is a non-attributed clone of:                         ////
+--//  Which is a unattributed clone of:                           ////
 --//  HDL implementation of a controller area network             ////
 --//  By: Anthony Richard Marino, Rowan University                ////
 --//                                                              ////
@@ -175,6 +175,7 @@ architecture Behavioral of CanLite is
     signal CanRx_q, CanRx_q_q, CanTx_q  :  std_logic; --! Registered CAN signals
     signal RxFifoWriteEnable_d, TxFifoReadEnable_d  : std_logic; --! Output buffers
     signal TxRequest                :  std_logic; --! New message ready for bit stream processor
+    signal TxPending                :  std_logic; --! To make sure frame gets sent, even after bus off
   
    -- Output signals from CanLiteBitTimingLogic module 
     signal sample_point             :  std_logic;   
@@ -256,6 +257,7 @@ begin
         if Reset_n = '0' then
             TxFifoReadEnable_d <= '0';
             TxRequest <= '0';
+            TxPending <= '0';
         elsif rising_edge(Clock) then
             if (
                 TxRequest = '1' or --! Active request
@@ -270,6 +272,13 @@ begin
                 TxRequest <= '1';
             elsif need_to_tx = '1' then --! Request acknowledged
                 TxRequest <= '0';
+            elsif TxPending = '1' then --! Resend after bus off
+                TxRequest <= '1';
+            end if;
+            if TxRequest = '1' then
+                TxPending <= '1';
+            elsif tx_successful = '1' then
+                TxPending <= '0';
             end if;
         end if;
     end process;
@@ -400,12 +409,12 @@ end entity CanLiteBitTimingLogic;
 
 architecture Behavioral of CanLiteBitTimingLogic is
 
-    function conv_std_logic(b : boolean) return std_ulogic is
+    function to_std_logic(b : boolean) return std_logic is
     begin
         if b then return('1'); else return('0'); end if;
     end;
 
-    signal clk_cnt                  :  unsigned(6 downto 0);   
+    signal clk_cnt                  :  unsigned(6 downto 0);
     signal clk_en                   :  std_logic;   
     signal clk_en_q                 :  std_logic;   
     signal sync_blocked             :  std_logic;   
@@ -475,18 +484,18 @@ begin
          clk_en_q <= clk_en ;    
       end if;
    end process;
-   
+
    -- Changing states 
-   go_sync <= (((clk_en_q and seg2) and CONV_STD_LOGIC(quant_cnt(2 downto 0) = (TIME_SEGMENT_2 - 1))) and (not hard_sync_xhdl5)) and (not resync) ;
+   go_sync <= (((clk_en_q and seg2) and to_std_logic(quant_cnt(2 downto 0) = (TIME_SEGMENT_2 - 1))) and (not hard_sync_xhdl5)) and (not resync) ;
    go_seg1 <= clk_en_q and (sync or hard_sync_xhdl5 or ((resync and seg2) and sync_window) or (resync_latched and sync_window)) ;
-   go_seg2 <= clk_en_q and ((seg1 and (not hard_sync_xhdl5)) and CONV_STD_LOGIC(quant_cnt = ( '0' & (TIME_SEGMENT_1 - 1 + delay)))) ;
+   go_seg2 <= clk_en_q and ((seg1 and (not hard_sync_xhdl5)) and to_std_logic(quant_cnt = ( '0' & (TIME_SEGMENT_1 - 1 + delay)))) ;
 
    process (clk, rst)
    begin
       if (rst = '1') then
          tx_point_xhdl4 <= '0';    
       elsif rising_edge(clk) then
-         tx_point_xhdl4 <= (not tx_point_xhdl4 and seg2) and ((clk_en and CONV_STD_LOGIC(quant_cnt(2 downto 0) = (TIME_SEGMENT_2 - 1))) or ((clk_en or clk_en_q) and (resync or hard_sync_xhdl5))) ;    --  When transmitter we should transmit as soon as possible.
+         tx_point_xhdl4 <= (not tx_point_xhdl4 and seg2) and ((clk_en and to_std_logic(quant_cnt(2 downto 0) = (TIME_SEGMENT_2 - 1))) or ((clk_en or clk_en_q) and (resync or hard_sync_xhdl5))) ;    --  When transmitter we should transmit as soon as possible.
       end if;
    end process;
 
@@ -589,7 +598,7 @@ begin
       end if;
    end process;
    -- If early edge appears within this window (in seg2 stage), phase error is fully compensated
-   sync_window <= CONV_STD_LOGIC((to_unsigned(TIME_SEGMENT_2 - 1, 5) - quant_cnt(2 downto 0)) < SYNCHRONIZATION_JUMP_WIDTH) ;
+   sync_window <= to_std_logic((to_unsigned(TIME_SEGMENT_2 - 1, 5) - quant_cnt(2 downto 0)) < SYNCHRONIZATION_JUMP_WIDTH) ;
 
    -- Sampling data (remembering two samples all the time).
    process (clk, rst)
@@ -616,7 +625,7 @@ begin
             sample_point_xhdl1 <= '0' ;    
          else
             if ((clk_en_q and (not hard_sync_xhdl5)) = '1') then
-               if ((seg1 and CONV_STD_LOGIC(quant_cnt = ('0' & ((TIME_SEGMENT_1 - 1) + delay)))) = '1') then
+               if ((seg1 and to_std_logic(quant_cnt = ('0' & ((TIME_SEGMENT_1 - 1) + delay)))) = '1') then
                   sample_point_xhdl1 <= '1' ;    
                   sampled_bit_q_xhdl3 <= sampled_bit_xhdl2 ;    
                   if TRIPLE_SAMPLING then
@@ -782,7 +791,7 @@ end entity CanLiteBitStreamProcessor;
 
 architecture Behavioral of CanLiteBitStreamProcessor is
 
-    function conv_std_logic(b : boolean) return std_ulogic is
+    function to_std_logic(b : boolean) return std_logic is
     begin
         if b then return('1'); else return('0'); end if;
     end;
@@ -831,7 +840,7 @@ architecture Behavioral of CanLiteBitStreamProcessor is
     signal RxIde                    :  std_logic;   
     signal crc_in                   :  std_logic_vector(14 downto 0);   
     signal RxDataByte               :  std_logic_vector(7 downto 0);
-    signal write_data_to_tmp_fifo   :  std_logic;   
+    signal write_data               :  std_logic;   
     signal byte_cnt                 :  unsigned(2 downto 0);   
     signal bit_stuff_cnt_en         :  std_logic;   
     signal crc_enable               :  std_logic;   
@@ -852,9 +861,6 @@ architecture Behavioral of CanLiteBitStreamProcessor is
     signal arbitration_field_d      :  std_logic;
     signal arbitration_cnt          :  unsigned(4 downto 0);     
     signal tx_q                     :  std_logic;   
-    signal data_cnt                 :  unsigned(3 downto 0);   --  Counting the data bytes that are written to FIFO
-    signal wr_fifo                  :  std_logic;   --  Write data and header to 64-byte fifo
-    signal data_for_fifo            :  std_logic_vector(7 downto 0);   --  Multiplexed data that is stored to 64-byte fifo
     signal tx_pointer               :  unsigned(5 downto 0);   
     signal tx_bit                   :  std_logic;   
     signal finish_msg               :  std_logic;   
@@ -877,7 +883,6 @@ architecture Behavioral of CanLiteBitStreamProcessor is
     signal bit_de_stuff             :  std_logic;   
     signal bit_de_stuff_tx          :  std_logic;   
     signal rule5                    :  std_logic;   
-   -- Rx state machine 
     signal go_rx_idle               :  std_logic;   
     signal go_rx_id1                :  std_logic;   
     signal go_rx_rtr               :  std_logic;   
@@ -905,7 +910,6 @@ architecture Behavioral of CanLiteBitStreamProcessor is
     signal bit_err                  :  std_logic;   
     signal ack_err                  :  std_logic;   
     signal stuff_err                :  std_logic;
-    signal reset_wr_fifo            :  std_logic;
     signal err                      :  std_logic;
     signal arbitration_field        :  std_logic;
     signal basic_chain              :  std_logic_vector(18 downto 0);
@@ -982,21 +986,21 @@ begin
     
     go_rx_idle <= ((sample_point and sampled_bit) and last_bit_of_inter) or (bus_free and (not node_bus_off_xhdl13)) ;
     go_rx_id1 <= (sample_point and (not sampled_bit)) and (rx_idle_xhdl6 or last_bit_of_inter) ;
-    go_rx_rtr <= (((not bit_de_stuff) and sample_point) and rx_id1) and CONV_STD_LOGIC(bit_cnt(3 downto 0) = b"1010") ;
+    go_rx_rtr <= (((not bit_de_stuff) and sample_point) and rx_id1) and to_std_logic(bit_cnt(3 downto 0) = b"1010") ;
     go_rx_ide <= ((not bit_de_stuff) and sample_point) and rx_rtr ;
     go_rx_r0 <= ((not bit_de_stuff) and sample_point) and (rx_ide and (not sampled_bit));
     go_rx_dlc <= ((not bit_de_stuff) and sample_point) and rx_r0 ;
     go_rx_data <= (((((not bit_de_stuff) and sample_point) and rx_dlc) and and_reduce(std_logic_vector(bit_cnt(1 downto 0)))) and (sampled_bit or (or_reduce(RxDlc(2 downto 0))))) and (not remote_rq) ;
-    go_rx_crc <= ((not bit_de_stuff) and sample_point) and (((rx_dlc and and_reduce(std_logic_vector(bit_cnt(1 downto 0)))) and (((not sampled_bit) and (not (or_reduce(RxDlc(2 downto 0))))) or remote_rq)) or (rx_data and CONV_STD_LOGIC(bit_cnt(5 downto 0) = ((RxDataLength & b"000") - 1)))) ;
-    go_rx_crc_lim <= (((not bit_de_stuff) and sample_point) and rx_crc) and CONV_STD_LOGIC(bit_cnt(3 downto 0) = b"1110") ;
+    go_rx_crc <= ((not bit_de_stuff) and sample_point) and (((rx_dlc and and_reduce(std_logic_vector(bit_cnt(1 downto 0)))) and (((not sampled_bit) and (not (or_reduce(RxDlc(2 downto 0))))) or remote_rq)) or (rx_data and to_std_logic(bit_cnt(5 downto 0) = ((RxDataLength & b"000") - 1)))) ;
+    go_rx_crc_lim <= (((not bit_de_stuff) and sample_point) and rx_crc) and to_std_logic(bit_cnt(3 downto 0) = b"1110") ;
     go_rx_ack <= ((not bit_de_stuff) and sample_point) and rx_crc_lim ;
     go_rx_ack_lim <= sample_point and rx_ack ;
     go_rx_eof <= sample_point and rx_ack_lim ;
-    go_rx_inter_xhdl9 <= (((sample_point and rx_eof) and CONV_STD_LOGIC(eof_cnt = b"110")) or error_frame_ended or overload_frame_ended);
+    go_rx_inter_xhdl9 <= (((sample_point and rx_eof) and to_std_logic(eof_cnt = b"110")) or error_frame_ended or overload_frame_ended);
     go_error_frame_xhdl33 <= form_err or stuff_err or bit_err or ack_err or (crc_err and go_rx_eof) ;
-    error_frame_ended <= CONV_STD_LOGIC(error_cnt2 = "111") and tx_point ;
-    overload_frame_ended <= CONV_STD_LOGIC(overload_cnt2 = "111") and tx_point ;
-    go_overload_frame_xhdl32 <= (((sample_point and ((not sampled_bit))) and (((rx_eof and (not transmitter_xhdl8)) and CONV_STD_LOGIC(eof_cnt = "110")) or error_frame_ended or overload_frame_ended)) or (((sample_point and (not sampled_bit)) and rx_inter_xhdl11) and CONV_STD_LOGIC(bit_cnt(1 downto 0) < "10")) or ((sample_point and (not sampled_bit)) and CONV_STD_LOGIC((error_cnt2 = "111") or (overload_cnt2 = b"111"))));
+    error_frame_ended <= to_std_logic(error_cnt2 = "111") and tx_point ;
+    overload_frame_ended <= to_std_logic(overload_cnt2 = "111") and tx_point ;
+    go_overload_frame_xhdl32 <= (((sample_point and ((not sampled_bit))) and (((rx_eof and (not transmitter_xhdl8)) and to_std_logic(eof_cnt = "110")) or error_frame_ended or overload_frame_ended)) or (((sample_point and (not sampled_bit)) and rx_inter_xhdl11) and to_std_logic(bit_cnt(1 downto 0) < "10")) or ((sample_point and (not sampled_bit)) and to_std_logic((error_cnt2 = "111") or (overload_cnt2 = b"111"))));
     go_crc_enable <= hard_sync or go_tx_xhdl34 ;
     rst_crc_enable <= go_rx_crc ;
     bit_de_stuff_set <= go_rx_id1 and (not go_error_frame_xhdl33) ;
@@ -1004,16 +1008,16 @@ begin
     remote_rq <= ((not RxIde) and RxRtr);
     RxDataLength <= unsigned(RxDlc) when RxDlc(3) = '0' else b"1000";
     ack_err <= (((rx_ack and sample_point) and sampled_bit) and tx_state_xhdl2);
-    bit_err <= ((((((((tx_state_xhdl2 or error_frame or overload_frame_xhdl4 or rx_ack) and sample_point) and CONV_STD_LOGIC(tx_xhdl29 /= sampled_bit)) and (not bit_err_exc1)) and (not bit_err_exc2)) and (not bit_err_exc3)) and (not bit_err_exc4)) and (not bit_err_exc5)) and (not bit_err_exc6) and (not reset_mode);
+    bit_err <= ((((((((tx_state_xhdl2 or error_frame or overload_frame_xhdl4 or rx_ack) and sample_point) and to_std_logic(tx_xhdl29 /= sampled_bit)) and (not bit_err_exc1)) and (not bit_err_exc2)) and (not bit_err_exc3)) and (not bit_err_exc4)) and (not bit_err_exc5)) and (not bit_err_exc6) and (not reset_mode);
     bit_err_exc1 <= (tx_state_xhdl2 and arbitration_field) and tx_xhdl29 ;
     bit_err_exc2 <= rx_ack and tx_xhdl29 ;
-    bit_err_exc3 <= (error_frame and node_error_passive_xhdl26) and CONV_STD_LOGIC(error_cnt1 < "111") ;
-    bit_err_exc4 <= ((error_frame and CONV_STD_LOGIC(error_cnt1 = "111")) and (not enable_error_cnt2)) or ((overload_frame_xhdl4 and CONV_STD_LOGIC(overload_cnt1 = "111")) and (not enable_overload_cnt2)) ;
-    bit_err_exc5 <= (error_frame and CONV_STD_LOGIC(error_cnt2 = "111")) or (overload_frame_xhdl4 and CONV_STD_LOGIC(overload_cnt2 = "111")) ;
-    bit_err_exc6 <= (CONV_STD_LOGIC(eof_cnt = "110") and rx_eof) and (not transmitter_xhdl8) ;
+    bit_err_exc3 <= (error_frame and node_error_passive_xhdl26) and to_std_logic(error_cnt1 < "111") ;
+    bit_err_exc4 <= ((error_frame and to_std_logic(error_cnt1 = "111")) and (not enable_error_cnt2)) or ((overload_frame_xhdl4 and to_std_logic(overload_cnt1 = "111")) and (not enable_overload_cnt2)) ;
+    bit_err_exc5 <= (error_frame and to_std_logic(error_cnt2 = "111")) or (overload_frame_xhdl4 and to_std_logic(overload_cnt2 = "111")) ;
+    bit_err_exc6 <= (to_std_logic(eof_cnt = "110") and rx_eof) and (not transmitter_xhdl8) ;
     arbitration_field <= rx_id1 or rx_rtr or rx_ide;
-    last_bit_of_inter <= rx_inter_xhdl11 and CONV_STD_LOGIC(bit_cnt(1 downto 0) = "10") ;
-    not_first_bit_of_inter_xhdl10 <= rx_inter_xhdl11 and CONV_STD_LOGIC(bit_cnt(1 downto 0) /= "00") ;
+    last_bit_of_inter <= rx_inter_xhdl11 and to_std_logic(bit_cnt(1 downto 0) = "10") ;
+    not_first_bit_of_inter_xhdl10 <= rx_inter_xhdl11 and to_std_logic(bit_cnt(1 downto 0) /= "00") ;
 
    -- Rx idle state
    process (clk, rst)
@@ -1286,12 +1290,12 @@ begin
    process (clk, rst)
    begin
       if (rst = '1') then
-         write_data_to_tmp_fifo <= '0';    
+         write_data <= '0';    
       elsif rising_edge(clk) then
             if ((((sample_point and rx_data) and (not bit_de_stuff)) and (and_reduce(std_logic_vector(bit_cnt(2 downto 0))))) = '1') then
-               write_data_to_tmp_fifo <= '1' ;    
+               write_data <= '1' ;    
             else
-               write_data_to_tmp_fifo <= '0' ;    
+               write_data <= '0' ;    
             end if;
       end if;
    end process;
@@ -1301,7 +1305,7 @@ begin
       if (rst = '1') then
          byte_cnt <= (others => '0');    
       elsif rising_edge(clk) then
-            if (write_data_to_tmp_fifo = '1') then
+            if (write_data = '1') then
                byte_cnt <= byte_cnt + 1;
             else
                if ((sample_point and go_rx_crc_lim) = '1') then
@@ -1316,7 +1320,7 @@ begin
         if rst = '1' then
             RxFrame.Data <= (others => (others => '0'));
         elsif rising_edge(clk) then
-            if (write_data_to_tmp_fifo = '1') then
+            if (write_data = '1') then
                 RxFrame.Data(to_integer(byte_cnt)) <= RxDataByte;
             end if;
         end if;
@@ -1431,9 +1435,9 @@ begin
          end if;
       end if;
    end process;
-   bit_de_stuff <= CONV_STD_LOGIC(bit_stuff_cnt = "101") ;
-   bit_de_stuff_tx <= CONV_STD_LOGIC(bit_stuff_cnt_tx = "101") ;
-   stuff_err <= ((sample_point and bit_stuff_cnt_en) and bit_de_stuff) and CONV_STD_LOGIC(sampled_bit = sampled_bit_q) ;
+   bit_de_stuff <= to_std_logic(bit_stuff_cnt = "101") ;
+   bit_de_stuff_tx <= to_std_logic(bit_stuff_cnt_tx = "101") ;
+   stuff_err <= ((sample_point and bit_stuff_cnt_en) and bit_de_stuff) and to_std_logic(sampled_bit = sampled_bit_q) ;
 
    -- Generating delayed signals
    process (clk, rst)
@@ -1472,13 +1476,13 @@ begin
             crc_err <= '0' ;    
          else
             if (go_rx_ack = '1') then
-               crc_err <= CONV_STD_LOGIC(crc_in /= calculated_crc) ;    
+               crc_err <= to_std_logic(crc_in /= calculated_crc) ;    
             end if;
          end if;
       end if;
    end process;
    -- Conditions for form error
-   form_err <= sample_point and ((((not bit_de_stuff) and rx_crc_lim) and (not sampled_bit)) or (rx_ack_lim and (not sampled_bit)) or (((CONV_STD_LOGIC(eof_cnt < "110") and rx_eof) and (not sampled_bit)) and (not transmitter_xhdl8)) or (((rx_eof) and (not sampled_bit)) and transmitter_xhdl8)) ;
+   form_err <= sample_point and ((((not bit_de_stuff) and rx_crc_lim) and (not sampled_bit)) or (rx_ack_lim and (not sampled_bit)) or (((to_std_logic(eof_cnt < "110") and rx_eof) and (not sampled_bit)) and (not transmitter_xhdl8)) or (((rx_eof) and (not sampled_bit)) and transmitter_xhdl8)) ;
 
    process (clk, rst)
    begin
@@ -1510,7 +1514,7 @@ begin
       end if;
    end process;
    -- Rule 5 (Fault confinement).
-   rule5 <= bit_err and ((((not node_error_passive_xhdl26) and error_frame) and CONV_STD_LOGIC(error_cnt1 < "111")) or (overload_frame_xhdl4 and CONV_STD_LOGIC(overload_cnt1 < "111"))) ;
+   rule5 <= bit_err and ((((not node_error_passive_xhdl26) and error_frame) and to_std_logic(error_cnt1 < "111")) or (overload_frame_xhdl4 and to_std_logic(overload_cnt1 < "111"))) ;
 
    -- Rule 3 exception 1 - first part (Fault confinement).
    process (clk, rst)
@@ -1537,7 +1541,7 @@ begin
          if ((go_error_frame_xhdl33 or rule3_exc1_2) = '1') then
             rule3_exc1_2 <= '0' ;    
          else
-            if ((((rule3_exc1_1 and CONV_STD_LOGIC(error_cnt1 < "111")) and sample_point) and (not sampled_bit)) = '1') then
+            if ((((rule3_exc1_1 and to_std_logic(error_cnt1 < "111")) and sample_point) and (not sampled_bit)) = '1') then
                rule3_exc1_2 <= '1' ;    
             end if;
          end if;
@@ -1584,29 +1588,8 @@ begin
             initialize => go_crc_enable,
             crc => calculated_crc
         );   
-   
-    reset_wr_fifo <=
-        '1' when (data_cnt = b"0001" and remote_rq = '1') else
-        '1' when (data_cnt = (unsigned(RxDlc) + 1) and RxDlc < b"1000") else
-        '1' when data_cnt = b"1001" else
-        reset_mode;
-   err <= form_err or stuff_err or bit_err or ack_err or form_err_latched or stuff_err_latched or bit_err_latched or ack_err_latched or crc_err ;
 
-   -- Data counter. Length of the data is limited to 8 bytes.
-   process (clk, rst)
-   begin
-      if (rst = '1') then
-         data_cnt <= (others => '0');
-      elsif rising_edge(clk) then
-         if (reset_wr_fifo = '1') then
-            data_cnt <= (others => '0');
-         else
-            if (wr_fifo = '1') then
-               data_cnt <= data_cnt + 1;
-            end if;
-         end if;
-      end if;
-   end process;
+   err <= form_err or stuff_err or bit_err or ack_err or form_err_latched or stuff_err_latched or bit_err_latched or ack_err_latched or crc_err ;
 
    -- Transmitting error frame.
    process (clk, rst)
@@ -1632,13 +1615,13 @@ begin
          if ((error_frame_ended or go_error_frame_xhdl33 or go_overload_frame_xhdl32) = '1') then
             error_cnt1 <= "000" ;    
          else
-            if (((error_frame and tx_point) and CONV_STD_LOGIC(error_cnt1 < "111")) = '1') then
+            if (((error_frame and tx_point) and to_std_logic(error_cnt1 < "111")) = '1') then
                error_cnt1 <= error_cnt1 + "001" ;    
             end if;
          end if;
       end if;
    end process;
-   error_flag_over <= ((((not node_error_passive_xhdl26) and sample_point) and CONV_STD_LOGIC(error_cnt1 = "111")) or ((node_error_passive_xhdl26 and sample_point) and CONV_STD_LOGIC(passive_cnt = "110"))) and (not enable_error_cnt2) ;
+   error_flag_over <= ((((not node_error_passive_xhdl26) and sample_point) and to_std_logic(error_cnt1 = "111")) or ((node_error_passive_xhdl26 and sample_point) and to_std_logic(passive_cnt = "110"))) and (not enable_error_cnt2) ;
 
    process (clk, rst)
    begin
@@ -1693,7 +1676,7 @@ begin
          if ((enable_error_cnt2 or go_error_frame_xhdl33 or enable_overload_cnt2 or go_overload_frame_xhdl32) = '1') then
             delayed_dominant_cnt <= "000" ;    
          else
-            if (((sample_point and (not sampled_bit)) and CONV_STD_LOGIC((error_cnt1 = "111") or (overload_cnt1 = "111"))) = '1') then
+            if (((sample_point and (not sampled_bit)) and to_std_logic((error_cnt1 = "111") or (overload_cnt1 = "111"))) = '1') then
                delayed_dominant_cnt <= delayed_dominant_cnt + "001" ;    
             end if;
          end if;
@@ -1709,8 +1692,8 @@ begin
          if ((error_frame_ended or go_error_frame_xhdl33 or go_overload_frame_xhdl32 or first_compare_bit) = '1') then
             passive_cnt <= "001" ;    
          else
-            if ((sample_point and CONV_STD_LOGIC(passive_cnt < "110")) = '1') then
-               if (((error_frame and (not enable_error_cnt2)) and CONV_STD_LOGIC(sampled_bit = sampled_bit_q)) = '1') then
+            if ((sample_point and to_std_logic(passive_cnt < "110")) = '1') then
+               if (((error_frame and (not enable_error_cnt2)) and to_std_logic(sampled_bit = sampled_bit_q)) = '1') then
                   passive_cnt <= passive_cnt + "001" ;    
                else
                   passive_cnt <= "001" ;    
@@ -1760,13 +1743,13 @@ begin
          if ((overload_frame_ended or go_error_frame_xhdl33 or go_overload_frame_xhdl32) = '1') then
             overload_cnt1 <= "000" ;    
          else
-            if (((overload_frame_xhdl4 and tx_point) and CONV_STD_LOGIC(overload_cnt1 < "111")) = '1') then
+            if (((overload_frame_xhdl4 and tx_point) and to_std_logic(overload_cnt1 < "111")) = '1') then
                overload_cnt1 <= overload_cnt1 + "001" ;    
             end if;
          end if;
       end if;
    end process;
-   overload_flag_over <= (sample_point and CONV_STD_LOGIC(overload_cnt1 = "111")) and (not enable_overload_cnt2) ;
+   overload_flag_over <= (sample_point and to_std_logic(overload_cnt1 = "111")) and (not enable_overload_cnt2) ;
 
    process (clk, rst)
    begin
@@ -1928,7 +1911,7 @@ begin
     end process;
 
    limited_tx_cnt_std <= b"111111" when TxFrame.Dlc(3) = '1' else (unsigned(TxFrame.Dlc(2 downto 0)) & b"000") - 1;
-   rst_tx_pointer <= (((((not bit_de_stuff_tx) and tx_point) and (not rx_data))) and CONV_STD_LOGIC(tx_pointer = b"010010")) or (((((not bit_de_stuff_tx) and tx_point) and rx_data)) and CONV_STD_LOGIC(tx_pointer = limited_tx_cnt_std)) or (tx_point and rx_crc_lim) or (go_rx_idle) or (reset_mode) or (overload_frame_xhdl4) or (error_frame) ;
+   rst_tx_pointer <= (((((not bit_de_stuff_tx) and tx_point) and (not rx_data))) and to_std_logic(tx_pointer = b"010010")) or (((((not bit_de_stuff_tx) and tx_point) and rx_data)) and to_std_logic(tx_pointer = limited_tx_cnt_std)) or (tx_point and rx_crc_lim) or (go_rx_idle) or (reset_mode) or (overload_frame_xhdl4) or (error_frame) ;
 
    process (clk, rst)
    begin
@@ -1960,8 +1943,8 @@ begin
          end if;
       end if;
    end process;
-   go_early_tx <= ((((need_to_tx_xhdl20 and (not tx_state_xhdl2)) and (not suspend or CONV_STD_LOGIC(susp_cnt = "111"))) and sample_point) and (not sampled_bit)) and (rx_idle_xhdl6 or last_bit_of_inter) ;
-   go_tx_xhdl34 <= ((need_to_tx_xhdl20 and (not tx_state_xhdl2)) and (not suspend or (sample_point and CONV_STD_LOGIC(susp_cnt = "111")))) and (go_early_tx or rx_idle_xhdl6) ;
+   go_early_tx <= ((((need_to_tx_xhdl20 and (not tx_state_xhdl2)) and (not suspend or to_std_logic(susp_cnt = "111"))) and sample_point) and (not sampled_bit)) and (rx_idle_xhdl6 or last_bit_of_inter) ;
+   go_tx_xhdl34 <= ((need_to_tx_xhdl20 and (not tx_state_xhdl2)) and (not suspend or (sample_point and to_std_logic(susp_cnt = "111")))) and (go_early_tx or rx_idle_xhdl6) ;
 
    -- go_early_tx latched (for proper bit_de_stuff generation)
    process (clk, rst)
@@ -2046,7 +2029,7 @@ begin
       if (rst = '1') then
          suspend <= '0';    
       elsif rising_edge(clk) then
-         if ((reset_mode or (sample_point and CONV_STD_LOGIC(susp_cnt = "111"))) = '1') then
+         if ((reset_mode or (sample_point and to_std_logic(susp_cnt = "111"))) = '1') then
             suspend <= '0' ;    
          else
             if (((not_first_bit_of_inter_xhdl10 and transmitter_xhdl8) and node_error_passive_xhdl26) = '1') then
@@ -2061,7 +2044,7 @@ begin
       if (rst = '1') then
          susp_cnt_en <= '0';    
       elsif rising_edge(clk) then
-         if ((reset_mode or (sample_point and CONV_STD_LOGIC(susp_cnt = "111"))) = '1') then
+         if ((reset_mode or (sample_point and to_std_logic(susp_cnt = "111"))) = '1') then
             susp_cnt_en <= '0' ;    
          else
             if (((suspend and sample_point) and last_bit_of_inter) = '1') then
@@ -2076,7 +2059,7 @@ begin
       if (rst = '1') then
          susp_cnt <= "000";    
       elsif rising_edge(clk) then
-         if ((reset_mode or (sample_point and CONV_STD_LOGIC(susp_cnt = "111"))) = '1') then
+         if ((reset_mode or (sample_point and to_std_logic(susp_cnt = "111"))) = '1') then
             susp_cnt <= "000" ;    
          else
             if ((susp_cnt_en and sample_point) = '1') then
@@ -2151,7 +2134,7 @@ begin
            rx_err_cnt_xhdl15 <= (others => '0');
         else
            if ((not transmitter_xhdl8 or arbitration_lost) = '1') then
-              if ((((go_rx_ack_lim and (not go_error_frame_xhdl33)) and (not crc_err)) and CONV_STD_LOGIC(rx_err_cnt_xhdl15 > 0)) = '1') then
+              if ((((go_rx_ack_lim and (not go_error_frame_xhdl33)) and (not crc_err)) and to_std_logic(rx_err_cnt_xhdl15 > 0)) = '1') then
                  if (rx_err_cnt_xhdl15 > 127) then
                     rx_err_cnt_xhdl15 <= to_unsigned(127, rx_err_cnt_xhdl15'length);
                  else
@@ -2162,7 +2145,7 @@ begin
                     if ((go_error_frame_xhdl33 and (not rule5)) = '1') then
                        rx_err_cnt_xhdl15 <= rx_err_cnt_xhdl15 + 1;    
                     else
-                       if ((((((error_flag_over and (not error_flag_over_latched)) and sample_point) and (not sampled_bit)) and CONV_STD_LOGIC(error_cnt1 = 7)) or (go_error_frame_xhdl33 and rule5) or ((sample_point and (not sampled_bit)) and CONV_STD_LOGIC(delayed_dominant_cnt = 7))) = '1') then
+                       if ((((((error_flag_over and (not error_flag_over_latched)) and sample_point) and (not sampled_bit)) and to_std_logic(error_cnt1 = 7)) or (go_error_frame_xhdl33 and rule5) or ((sample_point and (not sampled_bit)) and to_std_logic(delayed_dominant_cnt = 7))) = '1') then
                           rx_err_cnt_xhdl15 <= rx_err_cnt_xhdl15 + 8;    
                        end if;
                     end if;
@@ -2181,11 +2164,11 @@ begin
         if (set_reset_mode_xhdl12 = '1') then
            tx_err_cnt_xhdl16 <= to_unsigned(128, tx_err_cnt_xhdl16'length);
         else
-           if ((CONV_STD_LOGIC(tx_err_cnt_xhdl16 > 0) and (tx_successful_xhdl19 or bus_free)) = '1') then
+           if ((to_std_logic(tx_err_cnt_xhdl16 > 0) and (tx_successful_xhdl19 or bus_free)) = '1') then
               tx_err_cnt_xhdl16 <= tx_err_cnt_xhdl16 - 1;    
            else
               if ((transmitter_xhdl8 and (not arbitration_lost)) = '1') then
-                 if ((((sample_point and (not sampled_bit)) and CONV_STD_LOGIC(delayed_dominant_cnt = 7)) or (go_error_frame_xhdl33 and rule5) or ((go_error_frame_xhdl33 and (not ((transmitter_xhdl8 and node_error_passive_xhdl26) and ack_err))) and (not (((((transmitter_xhdl8 and stuff_err) and arbitration_field) and sample_point) and tx_xhdl29) and (not sampled_bit)))) or (error_frame and rule3_exc1_2)) = '1') then
+                 if ((((sample_point and (not sampled_bit)) and to_std_logic(delayed_dominant_cnt = 7)) or (go_error_frame_xhdl33 and rule5) or ((go_error_frame_xhdl33 and (not ((transmitter_xhdl8 and node_error_passive_xhdl26) and ack_err))) and (not (((((transmitter_xhdl8 and stuff_err) and arbitration_field) and sample_point) and tx_xhdl29) and (not sampled_bit)))) or (error_frame and rule3_exc1_2)) = '1') then
                     tx_err_cnt_xhdl16 <= tx_err_cnt_xhdl16 + 8;
                  end if;
               end if;
@@ -2202,7 +2185,7 @@ begin
          if ((rx_err_cnt_xhdl15 < b"010000000") and (tx_err_cnt_xhdl16 < b"010000000")) then
             node_error_passive_xhdl26 <= '0' ;    
          else
-            if (((CONV_STD_LOGIC((rx_err_cnt_xhdl15 >= b"010000000") or (tx_err_cnt_xhdl16 >= b"010000000")) and (error_frame_ended or go_error_frame_xhdl33 or ((not reset_mode) and reset_mode_q))) and (not node_bus_off_xhdl13)) = '1') then
+            if (((to_std_logic((rx_err_cnt_xhdl15 >= b"010000000") or (tx_err_cnt_xhdl16 >= b"010000000")) and (error_frame_ended or go_error_frame_xhdl33 or ((not reset_mode) and reset_mode_q))) and (not node_bus_off_xhdl13)) = '1') then
                node_error_passive_xhdl26 <= '1' ;    
             end if;
          end if;
@@ -2214,10 +2197,10 @@ begin
       if (rst = '1') then
          node_bus_off_xhdl13 <= '0';    
       elsif rising_edge(clk) then
-         if (((CONV_STD_LOGIC((rx_err_cnt_xhdl15 = b"000000000") and (tx_err_cnt_xhdl16 = b"000000000")) and (not reset_mode))) = '1') then
+         if (((to_std_logic((rx_err_cnt_xhdl15 = b"000000000") and (tx_err_cnt_xhdl16 = b"000000000")) and (not reset_mode))) = '1') then
             node_bus_off_xhdl13 <= '0' ;    
          else
-            if (CONV_STD_LOGIC(tx_err_cnt_xhdl16 >= b"100000000") = '1') then
+            if (to_std_logic(tx_err_cnt_xhdl16 >= b"100000000") = '1') then
                node_bus_off_xhdl13 <= '1' ;    
             end if;
          end if;
@@ -2230,7 +2213,7 @@ begin
          bus_free_cnt <= "0000";    
       elsif rising_edge(clk) then
             if (sample_point = '1') then
-               if (((sampled_bit and bus_free_cnt_en) and CONV_STD_LOGIC(bus_free_cnt < "1010")) = '1') then
+               if (((sampled_bit and bus_free_cnt_en) and to_std_logic(bus_free_cnt < "1010")) = '1') then
                   bus_free_cnt <= bus_free_cnt + "0001" ;    
                else
                   bus_free_cnt <= "0000" ;    
@@ -2247,7 +2230,7 @@ begin
          if ((((not reset_mode) and reset_mode_q) or (node_bus_off_q and (not reset_mode))) = '1') then
             bus_free_cnt_en <= '1' ;    
          else
-            if ((((sample_point and sampled_bit) and CONV_STD_LOGIC(bus_free_cnt = "1010")) and (not node_bus_off_xhdl13)) = '1') then
+            if ((((sample_point and sampled_bit) and to_std_logic(bus_free_cnt = "1010")) and (not node_bus_off_xhdl13)) = '1') then
                bus_free_cnt_en <= '0' ;    
             end if;
          end if;
@@ -2259,7 +2242,7 @@ begin
       if (rst = '1') then
          bus_free <= '0';    
       elsif rising_edge(clk) then
-            if (((sample_point and sampled_bit) and CONV_STD_LOGIC(bus_free_cnt = "1010") and waiting_for_bus_free) = '1') then
+            if (((sample_point and sampled_bit) and to_std_logic(bus_free_cnt = "1010") and waiting_for_bus_free) = '1') then
                bus_free <= '1' ;    
             else
                bus_free <= '0' ;    

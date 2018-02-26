@@ -34,6 +34,7 @@ architecture Behavioral of CanLite_tb is
         );
     end component CanLite;
     
+    --! Xilinx FIFO Generator, Independent Clocks
     component VendorFifo is
         port (
             rst : IN STD_LOGIC;
@@ -137,6 +138,7 @@ begin
             wr_rst_busy => TxFifoWriteBusy,
             rd_rst_busy => TxFifoReadBusy
         );
+        
     AppClock <= CanClock; --! Application clock may be different than CAN base Clock
     Reset <= not Reset_n;
     CanRx <= CanTx_Node1 and CanTx_Node2 and CanTx_Stimulus; --! Virtual CAN bus
@@ -232,7 +234,7 @@ begin
         TxFifoWriteEnable <= '0';
         
         --! Test bus off
-        wait for 30us;
+        wait for 100us;
         CanTx_Stimulus <= '0';
         wait until CanBus."="(Node1Status.State, CanBus.STATE_BUS_OFF);
         CanTx_Stimulus <= '1';
