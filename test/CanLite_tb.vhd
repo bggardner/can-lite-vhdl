@@ -40,10 +40,10 @@ architecture Behavioral of CanLite_tb is
             rst : IN STD_LOGIC;
             wr_clk : IN STD_LOGIC;
             rd_clk : IN STD_LOGIC;
-            din : IN STD_LOGIC_VECTOR(79 DOWNTO 0);
+            din : IN STD_LOGIC_VECTOR(98 DOWNTO 0);
             wr_en : IN STD_LOGIC;
             rd_en : IN STD_LOGIC;
-            dout : OUT STD_LOGIC_VECTOR(79 DOWNTO 0);
+            dout : OUT STD_LOGIC_VECTOR(98 DOWNTO 0);
             full : OUT STD_LOGIC;
             empty : OUT STD_LOGIC;
             wr_rst_busy : OUT STD_LOGIC;
@@ -54,7 +54,7 @@ architecture Behavioral of CanLite_tb is
     signal AppClock, CanClock   : std_logic;
     signal Reset, Reset_n       : std_logic;
     signal RxFrame, TxFrame_i, TxFrame_o    : CanBus.Frame;
-    signal RxFrameSlv_i, TxFrameSlv_i, TxFrameSlv_o : std_logic_vector(79 downto 0);
+    signal RxFrameSlv_i, TxFrameSlv_i, TxFrameSlv_o : std_logic_vector(98 downto 0);
     signal RxFifoWriteEnable, TxFifoReadEnable, TxFifoWriteEnable   : std_logic;
     signal RxFifoFull, TxFifoEmpty  : std_logic;
     signal TxFifoReadBusy, TxFifoWriteBusy  : std_logic;
@@ -74,9 +74,9 @@ begin
     port map (
         Clock => CanClock,
         Reset_n => Reset_n,
-        RxFrame => RxFrame,
-        RxFifoWriteEnable => RxFifoWriteEnable,
-        RxFifoFull => RxFifoFull,
+        RxFrame => open,
+        RxFifoWriteEnable => open,
+        RxFifoFull => '0',
         TxFrame => TxFrame_o,
         TxFifoReadEnable => TxFifoReadEnable,
         TxFifoEmpty => TxFifoEmpty,
@@ -97,9 +97,9 @@ begin
         port map (
             Clock => CanClock,
             Reset_n => Reset_n,
-            RxFrame => open,
-            RxFifoWriteEnable => open,
-            RxFifoFull => '0',
+            RxFrame => RxFrame,
+            RxFifoWriteEnable => RxFifoWriteEnable,
+            RxFifoFull => RxFifoFull,
             TxFrame => TxFrame_o,
             TxFifoReadEnable => open,
             TxFifoEmpty => '1',
@@ -109,7 +109,7 @@ begin
             CanTx => CanTx_Node2
         );
         
-    RxFifo : VendorFifo
+    Node2RxFifo : VendorFifo
         port map (
             rst => Reset,
             wr_clk => CanClock,
@@ -124,7 +124,7 @@ begin
             rd_rst_busy => open
         );
         
-    TxFifo : VendorFifo
+    Node1TxFifo : VendorFifo
         port map (
             rst => Reset,
             wr_clk => CanClock,
@@ -145,6 +145,7 @@ begin
     RxFrameSlv_i <=
         RxFrame.Id &
         RxFrame.Rtr &
+        RxFrame.Ide &
         RxFrame.Dlc &
         RxFrame.Data(0) &
         RxFrame.Data(1) &
@@ -157,6 +158,7 @@ begin
     TxFrameSlv_i <=
             TxFrame_i.Id &
             TxFrame_i.Rtr &
+            TxFrame_i.Ide &
             TxFrame_i.Dlc &
             TxFrame_i.Data(0) &
             TxFrame_i.Data(1) &
@@ -167,8 +169,9 @@ begin
             TxFrame_i.Data(6) &
             TxFrame_i.Data(7);
     TxFrame_o <= (
-        Id => TxFrameSlv_o(79 downto 69),
-        Rtr => TxFrameSlv_o(68),
+        Id => TxFrameSlv_o(98 downto 70),
+        Rtr => TxFrameSlv_o(69),
+        Ide => TxFrameSlv_o(68),
         Dlc => TxFrameSlv_o(67 downto 64),
         Data => (
             0 => TxFrameSlv_o(63 downto 56),
@@ -201,6 +204,7 @@ begin
         TxFrame_i <= (
             Id => (others => '0'),
             Rtr => '0',
+            Ide => '0',
             Dlc => (others => '0'),
             Data => (others => (others => '0'))
         );
@@ -212,8 +216,9 @@ begin
         --! Send 0 byte message
         wait until falling_edge(AppClock);
         TxFrame_i <= (
-            Id => b"11001011001",
+            Id => b"000000000000000000" & b"11001011001",
             Rtr => '0',
+            Ide => '0',
             Dlc => (others => '0'),
             Data => (others => (others => '0'))
         );
@@ -224,8 +229,9 @@ begin
         --! Send 8 byte message
         wait until falling_edge(AppClock);
         TxFrame_i <= (
-            Id => b"00000000001",
+            Id => b"110011001100110011" & b"00000000001",
             Rtr => '0',
+            Ide => '1',
             Dlc => b"1111", --! b"1xxx" interpreted as 8 bytes
             Data => (others => (others => '1'))
         );

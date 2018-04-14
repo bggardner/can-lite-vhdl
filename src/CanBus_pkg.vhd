@@ -15,8 +15,9 @@ package CanBus is
     );
     
     type Frame is record
-        Id      : std_logic_vector(10 downto 0);
+        Id      : std_logic_vector(28 downto 0);
         Rtr     : std_logic;
+        Ide     : std_logic;
         Dlc     : std_logic_vector(3 downto 0);
         Data    : DataBytes;
     end record Frame;
