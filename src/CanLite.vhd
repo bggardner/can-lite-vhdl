@@ -169,7 +169,7 @@ architecture Behavioral of CanLite is
     
    -- Outputs from CanLiteBitStreamProcessor 
     signal tx_state                 :  std_logic;
-    signal tx_state_q               :  std_logic;           
+    signal tx_state_q               :  std_logic;        
     signal rx_idle                  :  std_logic;
     signal transmitting             :  std_logic;
     signal transmitter              :  std_logic;
@@ -186,8 +186,8 @@ architecture Behavioral of CanLite is
     signal transmit_status          :  std_logic;
     signal receive_status           :  std_logic;
     signal tx_successful            :  std_logic;
-    signal need_to_tx               :  std_logic;   
-    signal node_error_passive       :  std_logic;    
+    signal need_to_tx               :  std_logic;
+    signal node_error_passive       :  std_logic; 
     signal tx_next                  :  std_logic;
     signal go_overload_frame        :  std_logic;
     signal go_error_frame           :  std_logic;
@@ -398,7 +398,6 @@ architecture Behavioral of CanLiteBitTimingLogic is
     end;
 
     signal clk_cnt                  :  unsigned(6 downto 0);
-<<<<<<< HEAD
     signal clk_en                   :  std_logic;
     signal clk_en_q                 :  std_logic;
     signal sync_blocked             :  std_logic;
@@ -417,36 +416,11 @@ architecture Behavioral of CanLiteBitTimingLogic is
     signal preset_cnt               :  unsigned(7 downto 0);
     signal sync_window              :  std_logic;
     signal resync                   :  std_logic; 
-    signal sample_point_xhdl1       :  std_logic;
-    signal sampled_bit_xhdl2        :  std_logic;
-    signal sampled_bit_q_xhdl3      :  std_logic;
-    signal tx_point_xhdl4           :  std_logic;
-    signal hard_sync_xhdl5          :  std_logic;
-=======
-    signal clk_en                   :  std_logic;   
-    signal clk_en_q                 :  std_logic;   
-    signal sync_blocked             :  std_logic;   
-    signal hard_sync_blocked        :  std_logic;   
-    signal quant_cnt                :  unsigned(4 downto 0);   
-    signal delay                    :  unsigned(3 downto 0);   
-    signal sync                     :  std_logic;   
-    signal seg1                     :  std_logic;   
-    signal seg2                     :  std_logic;   
-    signal resync_latched           :  std_logic;   
-    signal sample                   :  std_logic_vector(1 downto 0);   
-    signal tx_next_sp               :  std_logic;   
-    signal go_sync                  :  std_logic;   
-    signal go_seg1                  :  std_logic;   
-    signal go_seg2                  :  std_logic;   
-    signal preset_cnt               :  unsigned(7 downto 0);   
-    signal sync_window              :  std_logic;   
-    signal resync                   :  std_logic;    
-    signal sample_point_q           :  std_logic;   
-    signal sampled_bit_buf          :  std_logic;   
-    signal sampled_bit_q_buf      :  std_logic;   
-    signal tx_point_q               :  std_logic;   
-    signal hard_sync_buf            :  std_logic;   
->>>>>>> 809e3f8feec04baf8283bcf71405a395cd823894
+    signal sample_point_q           :  std_logic;
+    signal sampled_bit_buf          :  std_logic;
+    signal sampled_bit_q_buf      :  std_logic;
+    signal tx_point_q               :  std_logic;
+    signal hard_sync_buf            :  std_logic;
 
 begin
    sample_point <= sample_point_q;
@@ -465,7 +439,7 @@ begin
          clk_cnt <= b"0000000"; 
       elsif rising_edge(clk) then
          if (('0' & clk_cnt) >= (preset_cnt - 1)) then
-            clk_cnt <= b"0000000" ; 
+            clk_cnt <= b"0000000";
          else
             clk_cnt <= clk_cnt + 1;
          end if;
@@ -478,9 +452,9 @@ begin
          clk_en <= '0'; 
       elsif rising_edge(clk) then
          if (('0' & clk_cnt) = (preset_cnt - "00000001")) then
-            clk_en <= '1' ; 
+            clk_en <= '1';
          else
-            clk_en <= '0' ; 
+            clk_en <= '0';
          end if;
       end if;
    end process;
@@ -490,7 +464,7 @@ begin
       if (rst = '1') then
          clk_en_q <= '0'; 
       elsif rising_edge(clk) then
-         clk_en_q <= clk_en ; 
+         clk_en_q <= clk_en;
       end if;
    end process;
 
@@ -502,15 +476,9 @@ begin
    process (clk, rst)
    begin
       if (rst = '1') then
-<<<<<<< HEAD
-         tx_point_xhdl4 <= '0'; 
+         tx_point_q <= '0'; 
       elsif rising_edge(clk) then
-         tx_point_xhdl4 <= (not tx_point_xhdl4 and seg2) and ((clk_en and to_std_logic(quant_cnt(2 downto 0) = (TIME_SEGMENT_2 - 1))) or ((clk_en or clk_en_q) and (resync or hard_sync_xhdl5))) ; --  When transmitter we should transmit as soon as possible.
-=======
-         tx_point_q <= '0';    
-      elsif rising_edge(clk) then
-         tx_point_q <= (not tx_point_q and seg2) and ((clk_en and to_std_logic(quant_cnt(2 downto 0) = (TIME_SEGMENT_2 - 1))) or ((clk_en or clk_en_q) and (resync or hard_sync_buf))) ;    --  When transmitter we should transmit as soon as possible.
->>>>>>> 809e3f8feec04baf8283bcf71405a395cd823894
+         tx_point_q <= (not tx_point_q and seg2) and ((clk_en and to_std_logic(quant_cnt(2 downto 0) = (TIME_SEGMENT_2 - 1))) or ((clk_en or clk_en_q) and (resync or hard_sync_buf)));--  When transmitter we should transmit as soon as possible.
       end if;
    end process;
 
@@ -524,7 +492,7 @@ begin
          resync_latched <= '0'; 
       elsif rising_edge(clk) then
          if (((resync and seg2) and (not sync_window)) = '1') then
-            resync_latched <= '1' ; 
+            resync_latched <= '1';
          else
             if (go_seg1 = '1') then
                resync_latched <= '0'; 
@@ -540,7 +508,7 @@ begin
          sync <= '0'; 
       elsif rising_edge(clk) then
          if (clk_en_q = '1') then
-            sync <= go_sync ; 
+            sync <= go_sync;
          end if;
       end if;
    end process;
@@ -552,10 +520,10 @@ begin
          seg1 <= '1'; 
       elsif rising_edge(clk) then
          if (go_seg1 = '1') then
-            seg1 <= '1' ; 
+            seg1 <= '1';
          else
             if (go_seg2 = '1') then
-               seg1 <= '0' ; 
+               seg1 <= '0';
             end if;
          end if;
       end if;
@@ -568,10 +536,10 @@ begin
          seg2 <= '0'; 
       elsif rising_edge(clk) then
          if (go_seg2 = '1') then
-            seg2 <= '1' ; 
+            seg2 <= '1';
          else
             if ((go_sync or go_seg1) = '1') then
-               seg2 <= '0' ; 
+               seg2 <= '0';
             end if;
          end if;
       end if;
@@ -584,10 +552,10 @@ begin
          quant_cnt <= "00000"; 
       elsif rising_edge(clk) then
          if ((go_sync or go_seg1 or go_seg2) = '1') then
-            quant_cnt <= "00000" ; 
+            quant_cnt <= "00000";
          else
             if (clk_en_q = '1') then
-               quant_cnt <= quant_cnt + "00001" ; 
+               quant_cnt <= quant_cnt + "00001";
             end if;
          end if;
       end if;
@@ -631,49 +599,26 @@ begin
    process (clk, rst)
    begin
       if (rst = '1') then
-<<<<<<< HEAD
-         sampled_bit_xhdl2 <= '1'; 
-         sampled_bit_q_xhdl3 <= '1'; 
-         sample_point_xhdl1 <= '0'; 
+         sampled_bit_buf <= '1'; 
+         sampled_bit_q_buf <= '1'; 
+         sample_point_q <= '0'; 
       elsif rising_edge(clk) then
          if (go_error_frame = '1') then
-            sampled_bit_q_xhdl3 <= sampled_bit_xhdl2 ; 
-            sample_point_xhdl1 <= '0' ; 
-=======
-         sampled_bit_buf <= '1';    
-         sampled_bit_q_buf <= '1';    
-         sample_point_q <= '0';    
-      elsif rising_edge(clk) then
-         if (go_error_frame = '1') then
-            sampled_bit_q_buf <= sampled_bit_buf ;    
-            sample_point_q <= '0' ;    
->>>>>>> 809e3f8feec04baf8283bcf71405a395cd823894
+            sampled_bit_q_buf <= sampled_bit_buf;
+            sample_point_q <= '0';
          else
             if ((clk_en_q and (not hard_sync_buf)) = '1') then
                if ((seg1 and to_std_logic(quant_cnt = ('0' & ((TIME_SEGMENT_1 - 1) + delay)))) = '1') then
-<<<<<<< HEAD
-                  sample_point_xhdl1 <= '1' ; 
-                  sampled_bit_q_xhdl3 <= sampled_bit_xhdl2 ; 
+                  sample_point_q <= '1';
+                  sampled_bit_q_buf <= sampled_bit_buf;
                   if TRIPLE_SAMPLING then
-                     sampled_bit_xhdl2 <= (sample(0) and sample(1)) or (sample(0) and rx) or (sample(1) and rx) ; 
+                     sampled_bit_buf <= (sample(0) and sample(1)) or (sample(0) and rx) or (sample(1) and rx);
                   else
-                     sampled_bit_xhdl2 <= rx ; 
+                     sampled_bit_buf <= rx;
                   end if;
                end if;
             else
-               sample_point_xhdl1 <= '0' ; 
-=======
-                  sample_point_q <= '1' ;    
-                  sampled_bit_q_buf <= sampled_bit_buf ;    
-                  if TRIPLE_SAMPLING then
-                     sampled_bit_buf <= (sample(0) and sample(1)) or (sample(0) and rx) or (sample(1) and rx) ;    
-                  else
-                     sampled_bit_buf <= rx ;    
-                  end if;
-               end if;
-            else
-               sample_point_q <= '0' ;    
->>>>>>> 809e3f8feec04baf8283bcf71405a395cd823894
+               sample_point_q <= '0';
             end if;
          end if;
       end if;
@@ -688,18 +633,13 @@ begin
          tx_next_sp <= '0'; 
       elsif rising_edge(clk) then
          if ((go_overload_frame or (go_error_frame and (not node_error_passive)) or go_tx or send_ack) = '1') then
-            tx_next_sp <= '0' ; 
+            tx_next_sp <= '0';
          else
             if ((go_error_frame and node_error_passive) = '1') then
-               tx_next_sp <= '1' ; 
+               tx_next_sp <= '1';
             else
-<<<<<<< HEAD
-               if (sample_point_xhdl1 = '1') then
-                  tx_next_sp <= tx_next ; 
-=======
                if (sample_point_q = '1') then
-                  tx_next_sp <= tx_next ;    
->>>>>>> 809e3f8feec04baf8283bcf71405a395cd823894
+                  tx_next_sp <= tx_next;
                end if;
             end if;
          end if;
@@ -710,14 +650,14 @@ begin
    process (clk, rst)
    begin
       if (rst = '1') then
-         sync_blocked <= '1' ; 
+         sync_blocked <= '1';
       elsif rising_edge(clk) then
          if (clk_en_q = '1') then
             if (resync = '1') then
-               sync_blocked <= '1' ; 
+               sync_blocked <= '1';
             else
                if (go_seg2 = '1') then
-                  sync_blocked <= '0' ; 
+                  sync_blocked <= '0';
                end if;
             end if;
          end if;
@@ -728,20 +668,15 @@ begin
    process (clk, rst)
    begin
       if (rst = '1') then
-         hard_sync_blocked <= '0' ; 
+         hard_sync_blocked <= '0';
       elsif rising_edge(clk) then
-<<<<<<< HEAD
-         if (((hard_sync_xhdl5 and clk_en_q) or ((((transmitting and transmitter) or go_tx) and tx_point_xhdl4) and (not tx_next))) = '1') then
-            hard_sync_blocked <= '1' ; 
-=======
          if (((hard_sync_buf and clk_en_q) or ((((transmitting and transmitter) or go_tx) and tx_point_q) and (not tx_next))) = '1') then
-            hard_sync_blocked <= '1' ;    
->>>>>>> 809e3f8feec04baf8283bcf71405a395cd823894
+            hard_sync_blocked <= '1';
          else
             if ((go_rx_inter or (((rx_idle or rx_inter) and sample_point_q) and sampled_bit_buf)) = '1') then
                -- When a glitch performed synchronization
                
-               hard_sync_blocked <= '0' ; 
+               hard_sync_blocked <= '0';
             end if;
          end if;
       end if;
@@ -910,8 +845,7 @@ architecture Behavioral of CanLiteBitStreamProcessor is
     signal overload_cnt2            :  unsigned(2 downto 0);
     signal crc_err                  :  std_logic;
     signal arbitration_lost         :  std_logic; 
-<<<<<<< HEAD
-    signal arbitration_field_d      :  std_logic;
+    signal arbitration_field_q      :  std_logic;
     signal arbitration_cnt          :  unsigned(4 downto 0);  
     signal tx_q                     :  std_logic;
     signal tx_pointer               :  unsigned(5 downto 0);
@@ -957,51 +891,6 @@ architecture Behavioral of CanLiteBitStreamProcessor is
     signal bit_de_stuff_set         :  std_logic;
     signal bit_de_stuff_reset       :  std_logic;
     signal go_early_tx              :  std_logic;
-=======
-    signal arbitration_field_q      :  std_logic;
-    signal arbitration_cnt          :  unsigned(4 downto 0);     
-    signal tx_q                     :  std_logic;   
-    signal tx_pointer               :  unsigned(5 downto 0);   
-    signal tx_bit                   :  std_logic;   
-    signal finish_msg               :  std_logic;   
-    signal bus_free_cnt             :  unsigned(3 downto 0);   
-    signal bus_free_cnt_en          :  std_logic;   
-    signal bus_free                 :  std_logic;   
-    signal waiting_for_bus_free     :  std_logic;   
-    signal node_bus_off_q           :  std_logic;   
-    signal ack_err_latched          :  std_logic;   
-    signal bit_err_latched          :  std_logic;   
-    signal stuff_err_latched        :  std_logic;   
-    signal form_err_latched         :  std_logic;   
-    signal rule3_exc1_1             :  std_logic;   
-    signal rule3_exc1_2             :  std_logic;   
-    signal suspend                  :  std_logic;   
-    signal susp_cnt_en              :  std_logic;   
-    signal susp_cnt                 :  unsigned(2 downto 0);   
-    signal error_flag_over_latched  :  std_logic;   
-    signal first_compare_bit        :  std_logic;   
-    signal bit_de_stuff             :  std_logic;   
-    signal bit_de_stuff_tx          :  std_logic;   
-    signal rule5                    :  std_logic;   
-    signal go_rx_idle               :  std_logic;   
-    signal go_rx_id1                :  std_logic;   
-    signal go_rx_rtr                :  std_logic;   
-    signal go_rx_ide                :  std_logic;     
-    signal go_rx_r0                 :  std_logic;   
-    signal go_rx_dlc                :  std_logic;   
-    signal go_rx_data               :  std_logic;   
-    signal go_rx_crc                :  std_logic;   
-    signal go_rx_crc_lim            :  std_logic;   
-    signal go_rx_ack                :  std_logic;   
-    signal go_rx_ack_lim            :  std_logic;   
-    signal go_rx_eof                :  std_logic;   
-    signal last_bit_of_inter        :  std_logic;   
-    signal go_crc_enable            :  std_logic;   
-    signal rst_crc_enable           :  std_logic;   
-    signal bit_de_stuff_set         :  std_logic;   
-    signal bit_de_stuff_reset       :  std_logic;   
-    signal go_early_tx              :  std_logic;   
->>>>>>> 809e3f8feec04baf8283bcf71405a395cd823894
     signal calculated_crc           :  std_logic_vector(14 downto 0);  
     signal remote_rq                :  std_logic;
     signal limited_data_len         :  unsigned(3 downto 0);
@@ -1032,54 +921,29 @@ architecture Behavioral of CanLiteBitStreamProcessor is
     signal limited_tx_cnt           :  unsigned(5 downto 0);
 
     signal CrcEnableValid           :  std_logic;
-             
-<<<<<<< HEAD
-    signal tx_state_xhdl2           :  std_logic;
-    signal tx_state_q_xhdl3         :  std_logic;
-    signal overload_frame_xhdl4     :  std_logic;
-    signal rx_idle_xhdl6            :  std_logic;
-    signal transmitting_q           :  std_logic;
-    signal transmitter_xhdl8        :  std_logic;
-    signal go_rx_inter_xhdl9        :  std_logic;
-    signal not_first_bit_of_inter_xhdl10   :  std_logic;
-    signal rx_inter_xhdl11          :  std_logic;
-    signal set_reset_mode_xhdl12    :  std_logic;
-    signal node_bus_off_xhdl13      :  std_logic;
-    signal rx_err_cnt_xhdl15        :  unsigned(8 downto 0);
-    signal tx_err_cnt_xhdl16        :  unsigned(8 downto 0);  
-    signal tx_successful_xhdl19     :  std_logic;
-    signal need_to_tx_xhdl20        :  std_logic;     
-    signal node_error_passive_xhdl26:  std_logic;   
-    signal tx_xhdl29                :  std_logic;
-    signal tx_next_xhdl30           :  std_logic;
-    signal go_overload_frame_xhdl32 :  std_logic;
-    signal go_error_frame_xhdl33    :  std_logic;
-    signal go_tx_xhdl34             :  std_logic;
-    signal send_ack_xhdl35          :  std_logic;
-=======
-    signal tx_state_buf             :  std_logic;   
-    signal tx_state_q_buf           :  std_logic;   
-    signal overload_frame           :  std_logic;   
-    signal rx_idle_buf              :  std_logic;   
-    signal transmitting_buf         :  std_logic;   
-    signal transmitter_buf          :  std_logic;   
-    signal go_rx_inter_buf          :  std_logic;   
-    signal not_first_bit_of_inter_buf :  std_logic;   
-    signal rx_inter_buf               :  std_logic;   
-    signal set_reset_mode_buf    :  std_logic;   
-    signal node_bus_off_buf      :  std_logic;   
-    signal rx_err_cnt_buf        :  unsigned(8 downto 0);   
-    signal tx_err_cnt_buf        :  unsigned(8 downto 0);     
-    signal tx_successful_buf     :  std_logic;   
-    signal need_to_tx_buf        :  std_logic;        
-    signal node_error_passive_buf:  std_logic;      
-    signal tx_buf                :  std_logic;   
-    signal tx_next_buf           :  std_logic;   
-    signal go_overload_frame_buf :  std_logic;   
-    signal go_error_frame_buf    :  std_logic;   
-    signal go_tx_buf             :  std_logic;   
-    signal send_ack_buf          :  std_logic;   
->>>>>>> 809e3f8feec04baf8283bcf71405a395cd823894
+    
+    signal tx_state_buf             :  std_logic;
+    signal tx_state_q_buf           :  std_logic;
+    signal overload_frame           :  std_logic;
+    signal rx_idle_buf              :  std_logic;
+    signal transmitting_buf         :  std_logic;
+    signal transmitter_buf          :  std_logic;
+    signal go_rx_inter_buf          :  std_logic;
+    signal not_first_bit_of_inter_buf :  std_logic;
+    signal rx_inter_buf               :  std_logic;
+    signal set_reset_mode_buf    :  std_logic;
+    signal node_bus_off_buf      :  std_logic;
+    signal rx_err_cnt_buf        :  unsigned(8 downto 0);
+    signal tx_err_cnt_buf        :  unsigned(8 downto 0);  
+    signal tx_successful_buf     :  std_logic;
+    signal need_to_tx_buf        :  std_logic;     
+    signal node_error_passive_buf:  std_logic;   
+    signal tx_buf                :  std_logic;
+    signal tx_next_buf           :  std_logic;
+    signal go_overload_frame_buf :  std_logic;
+    signal go_error_frame_buf    :  std_logic;
+    signal go_tx_buf             :  std_logic;
+    signal send_ack_buf          :  std_logic;
  
 
 begin
@@ -1088,41 +952,6 @@ begin
     RxFrame.Ide <= ide;
     RxFrame.Dlc <= data_len;
     
-<<<<<<< HEAD
-    tx_state <= tx_state_xhdl2;
-    tx_state_q <= tx_state_q_xhdl3;
-    rx_idle <= rx_idle_xhdl6;
-    transmitting <= transmitting_q;
-    transmitter <= transmitter_xhdl8;
-    go_rx_inter <= go_rx_inter_xhdl9;
-    not_first_bit_of_inter <= not_first_bit_of_inter_xhdl10;
-    rx_inter <= rx_inter_xhdl11;
-    set_reset_mode <= set_reset_mode_xhdl12;
-    node_bus_off <= node_bus_off_xhdl13;
-    error_status <= '1' when (rx_err_cnt_xhdl15 > 96) or (tx_err_cnt_xhdl16 > 96) else '0';
-    rx_err_cnt <= rx_err_cnt_xhdl15(7 downto 0);
-    tx_err_cnt <= tx_err_cnt_xhdl16(7 downto 0);
-    transmit_status <= transmitting_q;
-    receive_status <= ((not waiting_for_bus_free) and (not rx_idle_xhdl6)) and (not transmitting_q);
-    tx_successful <= tx_successful_xhdl19;
-    need_to_tx <= need_to_tx_xhdl20;
-    node_error_passive <= node_error_passive_xhdl26;
-    tx <= tx_xhdl29;
-    tx_next <= tx_next_xhdl30;
-    go_overload_frame <= go_overload_frame_xhdl32;
-    go_error_frame <= go_error_frame_xhdl33;
-    go_tx <= go_tx_xhdl34;
-    send_ack <= send_ack_xhdl35; 
-    
-    go_rx_idle <= ((sample_point and sampled_bit) and last_bit_of_inter) or (bus_free and (not node_bus_off_xhdl13)) ;
-    go_rx_id1 <= (sample_point and (not sampled_bit)) and (rx_idle_xhdl6 or last_bit_of_inter) ;
-    go_rx_rtr1 <= (((not bit_de_stuff) and sample_point) and rx_id1) and to_std_logic(bit_cnt(3 downto 0) = b"1010") ;
-    go_rx_ide <= ((not bit_de_stuff) and sample_point) and rx_rtr1;
-    go_rx_id2 <= (((not bit_de_stuff) and sample_point) and rx_ide) and sampled_bit;
-    go_rx_rtr2 <= (((not bit_de_stuff) and sample_point) and rx_id2) and to_std_logic(bit_cnt(4 downto 0) = b"10001");
-    go_rx_r1 <= ((not bit_de_stuff) and sample_point) and rx_rtr2;
-    go_rx_r0 <= ((not bit_de_stuff) and sample_point) and ((rx_ide and (not sampled_bit)) or rx_r1);
-=======
     tx_state <= tx_state_buf;
     tx_state_q <= tx_state_q_buf;
     rx_idle <= rx_idle_buf;
@@ -1146,14 +975,17 @@ begin
     go_overload_frame <= go_overload_frame_buf;
     go_error_frame <= go_error_frame_buf;
     go_tx <= go_tx_buf;
-    send_ack <= send_ack_buf;    
+    send_ack <= send_ack_buf; 
     
     go_rx_idle <= ((sample_point and sampled_bit) and last_bit_of_inter) or (bus_free and (not node_bus_off_buf)) ;
     go_rx_id1 <= (sample_point and (not sampled_bit)) and (rx_idle_buf or last_bit_of_inter) ;
-    go_rx_rtr <= (((not bit_de_stuff) and sample_point) and rx_id1) and to_std_logic(bit_cnt(3 downto 0) = b"1010") ;
-    go_rx_ide <= ((not bit_de_stuff) and sample_point) and rx_rtr ;
-    go_rx_r0 <= ((not bit_de_stuff) and sample_point) and (rx_ide and (not sampled_bit));
->>>>>>> 809e3f8feec04baf8283bcf71405a395cd823894
+    go_rx_rtr1 <= (((not bit_de_stuff) and sample_point) and rx_id1) and to_std_logic(bit_cnt(3 downto 0) = b"1010") ;
+    go_rx_ide <= ((not bit_de_stuff) and sample_point) and rx_rtr1;
+    go_rx_id2 <= (((not bit_de_stuff) and sample_point) and rx_ide) and sampled_bit;
+    go_rx_rtr2 <= (((not bit_de_stuff) and sample_point) and rx_id2) and to_std_logic(bit_cnt(4 downto 0) = b"10001");
+    go_rx_r1 <= ((not bit_de_stuff) and sample_point) and rx_rtr2;
+    go_rx_r0 <= ((not bit_de_stuff) and sample_point) and ((rx_ide and (not sampled_bit)) or rx_r1);
+
     go_rx_dlc <= ((not bit_de_stuff) and sample_point) and rx_r0 ;
     go_rx_data <= (((((not bit_de_stuff) and sample_point) and rx_dlc) and and_reduce(std_logic_vector(bit_cnt(1 downto 0)))) and (sampled_bit or (or_reduce(data_len(2 downto 0))))) and (not remote_rq) ;
     go_rx_crc <= ((not bit_de_stuff) and sample_point) and (((rx_dlc and and_reduce(std_logic_vector(bit_cnt(1 downto 0)))) and (((not sampled_bit) and (not (or_reduce(data_len(2 downto 0))))) or remote_rq)) or (rx_data and to_std_logic(bit_cnt(5 downto 0) = ((limited_data_len & b"000") - 1)))) ;
@@ -1168,27 +1000,10 @@ begin
     go_overload_frame_buf <= (((sample_point and ((not sampled_bit))) and (((rx_eof and (not transmitter_buf)) and to_std_logic(eof_cnt = "110")) or error_frame_ended or overload_frame_ended)) or (((sample_point and (not sampled_bit)) and rx_inter_buf) and to_std_logic(bit_cnt(1 downto 0) < "10")) or ((sample_point and (not sampled_bit)) and to_std_logic((error_cnt2 = "111") or (overload_cnt2 = b"111"))));
     go_crc_enable <= hard_sync or go_tx_buf ;
     rst_crc_enable <= go_rx_crc ;
-<<<<<<< HEAD
-    bit_de_stuff_set <= go_rx_id1 and (not go_error_frame_xhdl33) ;
-    bit_de_stuff_reset <= go_rx_ack or go_error_frame_xhdl33 or go_overload_frame_xhdl32 ;
-    remote_rq <= ((not ide) and rtr1) or (ide and rtr2);
-    limited_data_len <= unsigned(data_len) when data_len(3) = '0' else b"1000";
-    ack_err <= (((rx_ack and sample_point) and sampled_bit) and tx_state_xhdl2);
-    bit_err <= ((((((((tx_state_xhdl2 or error_frame or overload_frame_xhdl4 or rx_ack) and sample_point) and to_std_logic(tx_xhdl29 /= sampled_bit)) and (not bit_err_exc1)) and (not bit_err_exc2)) and (not bit_err_exc3)) and (not bit_err_exc4)) and (not bit_err_exc5)) and (not bit_err_exc6) and (not reset_mode);
-    bit_err_exc1 <= (tx_state_xhdl2 and arbitration_field) and tx_xhdl29 ;
-    bit_err_exc2 <= rx_ack and tx_xhdl29 ;
-    bit_err_exc3 <= (error_frame and node_error_passive_xhdl26) and to_std_logic(error_cnt1 < "111") ;
-    bit_err_exc4 <= ((error_frame and to_std_logic(error_cnt1 = "111")) and (not enable_error_cnt2)) or ((overload_frame_xhdl4 and to_std_logic(overload_cnt1 = "111")) and (not enable_overload_cnt2)) ;
-    bit_err_exc5 <= (error_frame and to_std_logic(error_cnt2 = "111")) or (overload_frame_xhdl4 and to_std_logic(overload_cnt2 = "111")) ;
-    bit_err_exc6 <= (to_std_logic(eof_cnt = "110") and rx_eof) and (not transmitter_xhdl8) ;
-    arbitration_field <= rx_id1 or rx_rtr1 or rx_ide or rx_id2 or rx_rtr2;
-    last_bit_of_inter <= rx_inter_xhdl11 and to_std_logic(bit_cnt(1 downto 0) = "10") ;
-    not_first_bit_of_inter_xhdl10 <= rx_inter_xhdl11 and to_std_logic(bit_cnt(1 downto 0) /= "00") ;
-=======
     bit_de_stuff_set <= go_rx_id1 and (not go_error_frame_buf) ;
     bit_de_stuff_reset <= go_rx_ack or go_error_frame_buf or go_overload_frame_buf ;
-    remote_rq <= ((not RxIde) and RxRtr);
-    RxDataLength <= unsigned(RxDlc) when RxDlc(3) = '0' else b"1000";
+    remote_rq <= ((not ide) and rtr1) or (ide and rtr2);
+    limited_data_len <= unsigned(data_len) when data_len(3) = '0' else b"1000";
     ack_err <= (((rx_ack and sample_point) and sampled_bit) and tx_state_buf);
     bit_err <= ((((((((tx_state_buf or error_frame or overload_frame or rx_ack) and sample_point) and to_std_logic(tx_buf /= sampled_bit)) and (not bit_err_exc1)) and (not bit_err_exc2)) and (not bit_err_exc3)) and (not bit_err_exc4)) and (not bit_err_exc5)) and (not bit_err_exc6) and (not reset_mode);
     bit_err_exc1 <= (tx_state_buf and arbitration_field) and tx_buf ;
@@ -1197,32 +1012,21 @@ begin
     bit_err_exc4 <= ((error_frame and to_std_logic(error_cnt1 = "111")) and (not enable_error_cnt2)) or ((overload_frame and to_std_logic(overload_cnt1 = "111")) and (not enable_overload_cnt2)) ;
     bit_err_exc5 <= (error_frame and to_std_logic(error_cnt2 = "111")) or (overload_frame and to_std_logic(overload_cnt2 = "111")) ;
     bit_err_exc6 <= (to_std_logic(eof_cnt = "110") and rx_eof) and (not transmitter_buf) ;
-    arbitration_field <= rx_id1 or rx_rtr or rx_ide;
+    arbitration_field <= rx_id1 or rx_rtr1 or rx_ide or rx_id2 or rx_rtr2;
     last_bit_of_inter <= rx_inter_buf and to_std_logic(bit_cnt(1 downto 0) = "10") ;
     not_first_bit_of_inter_buf <= rx_inter_buf and to_std_logic(bit_cnt(1 downto 0) /= "00") ;
->>>>>>> 809e3f8feec04baf8283bcf71405a395cd823894
 
    -- Rx idle state
    process (clk, rst)
    begin
       if (rst = '1') then
-<<<<<<< HEAD
-         rx_idle_xhdl6 <= '0'; 
-      elsif rising_edge(clk) then
-         if ((go_rx_id1 or go_error_frame_xhdl33) = '1') then
-            rx_idle_xhdl6 <= '0' ; 
-         else
-            if (go_rx_idle = '1') then
-               rx_idle_xhdl6 <= '1' ; 
-=======
-         rx_idle_buf <= '0';    
+         rx_idle_buf <= '0'; 
       elsif rising_edge(clk) then
          if ((go_rx_id1 or go_error_frame_buf) = '1') then
-            rx_idle_buf <= '0' ;    
+            rx_idle_buf <= '0';
          else
             if (go_rx_idle = '1') then
-               rx_idle_buf <= '1' ;    
->>>>>>> 809e3f8feec04baf8283bcf71405a395cd823894
+               rx_idle_buf <= '1';
             end if;
          end if;
       end if;
@@ -1234,16 +1038,11 @@ begin
       if (rst = '1') then
          rx_id1 <= '0'; 
       elsif rising_edge(clk) then
-<<<<<<< HEAD
-         if ((go_rx_rtr1 or go_error_frame_xhdl33) = '1') then
-            rx_id1 <= '0' ; 
-=======
-         if ((go_rx_rtr or go_error_frame_buf) = '1') then
-            rx_id1 <= '0' ;    
->>>>>>> 809e3f8feec04baf8283bcf71405a395cd823894
+         if ((go_rx_rtr1 or go_error_frame_buf) = '1') then
+            rx_id1 <= '0';
          else
             if (go_rx_id1 = '1') then
-               rx_id1 <= '1' ; 
+               rx_id1 <= '1';
             end if;
          end if;
       end if;
@@ -1255,16 +1054,11 @@ begin
       if (rst = '1') then
          rx_rtr1 <= '0'; 
       elsif rising_edge(clk) then
-<<<<<<< HEAD
-         if ((go_rx_ide or go_error_frame_xhdl33) = '1') then
-            rx_rtr1 <= '0' ; 
-=======
          if ((go_rx_ide or go_error_frame_buf) = '1') then
-            rx_rtr <= '0' ;    
->>>>>>> 809e3f8feec04baf8283bcf71405a395cd823894
+            rx_rtr1 <= '0';
          else
             if (go_rx_rtr1 = '1') then
-               rx_rtr1 <= '1' ; 
+               rx_rtr1 <= '1';
             end if;
          end if;
       end if;
@@ -1276,16 +1070,11 @@ begin
       if (rst = '1') then
          rx_ide <= '0'; 
       elsif rising_edge(clk) then
-<<<<<<< HEAD
-         if ((go_rx_r0 or go_rx_id2 or go_error_frame_xhdl33) = '1') then
-            rx_ide <= '0' ; 
-=======
-         if ((go_rx_r0 or go_error_frame_buf) = '1') then
-            rx_ide <= '0' ;    
->>>>>>> 809e3f8feec04baf8283bcf71405a395cd823894
+         if ((go_rx_r0 or go_rx_id2 or go_error_frame_buf) = '1') then
+            rx_ide <= '0';
          else
             if (go_rx_ide = '1') then
-               rx_ide <= '1' ; 
+               rx_ide <= '1';
             end if;
          end if;
       end if;
@@ -1297,7 +1086,7 @@ begin
         if (rst = '1') then
             rx_id2 <= '0';
         elsif rising_edge(clk) then
-            if ((go_rx_rtr2 or go_error_frame_xhdl33) = '1') then
+            if ((go_rx_rtr2 or go_error_frame_buf) = '1') then
                 rx_id2 <= '0';
             else
                 if (go_rx_id2 = '1') then
@@ -1313,7 +1102,7 @@ begin
         if (rst = '1') then
             rx_rtr2 <= '0';
         elsif rising_edge(clk) then
-            if ((go_rx_r1 or go_error_frame_xhdl33) = '1') then
+            if ((go_rx_r1 or go_error_frame_buf) = '1') then
                 rx_rtr2 <= '0';
             else
                 if (go_rx_rtr2 = '1') then
@@ -1329,7 +1118,7 @@ begin
         if (rst = '1') then
             rx_r1 <= '0';
         elsif rising_edge(clk) then
-            if ((go_rx_r0 or go_error_frame_xhdl33) = '1') then
+            if ((go_rx_r0 or go_error_frame_buf) = '1') then
                 rx_r1 <= '0';
             else
                 if (go_rx_r1 = '1') then
@@ -1345,16 +1134,11 @@ begin
       if (rst = '1') then
          rx_r0 <= '0'; 
       elsif rising_edge(clk) then
-<<<<<<< HEAD
-         if ((go_rx_dlc or go_error_frame_xhdl33) = '1') then
-            rx_r0 <= '0' ; 
-=======
          if ((go_rx_dlc or go_error_frame_buf) = '1') then
-            rx_r0 <= '0' ;    
->>>>>>> 809e3f8feec04baf8283bcf71405a395cd823894
+            rx_r0 <= '0';
          else
             if (go_rx_r0 = '1') then
-               rx_r0 <= '1' ; 
+               rx_r0 <= '1';
             end if;
          end if;
       end if;
@@ -1366,16 +1150,11 @@ begin
       if (rst = '1') then
          rx_dlc <= '0'; 
       elsif rising_edge(clk) then
-<<<<<<< HEAD
-         if ((go_rx_data or go_rx_crc or go_error_frame_xhdl33) = '1') then
-            rx_dlc <= '0' ; 
-=======
          if ((go_rx_data or go_rx_crc or go_error_frame_buf) = '1') then
-            rx_dlc <= '0' ;    
->>>>>>> 809e3f8feec04baf8283bcf71405a395cd823894
+            rx_dlc <= '0';
          else
             if (go_rx_dlc = '1') then
-               rx_dlc <= '1' ; 
+               rx_dlc <= '1';
             end if;
          end if;
       end if;
@@ -1387,16 +1166,11 @@ begin
       if (rst = '1') then
          rx_data <= '0'; 
       elsif rising_edge(clk) then
-<<<<<<< HEAD
-         if ((go_rx_crc or go_error_frame_xhdl33) = '1') then
-            rx_data <= '0' ; 
-=======
          if ((go_rx_crc or go_error_frame_buf) = '1') then
-            rx_data <= '0' ;    
->>>>>>> 809e3f8feec04baf8283bcf71405a395cd823894
+            rx_data <= '0';
          else
             if (go_rx_data = '1') then
-               rx_data <= '1' ; 
+               rx_data <= '1';
             end if;
          end if;
       end if;
@@ -1408,16 +1182,11 @@ begin
       if (rst = '1') then
          rx_crc <= '0'; 
       elsif rising_edge(clk) then
-<<<<<<< HEAD
-         if ((go_rx_crc_lim or go_error_frame_xhdl33) = '1') then
-            rx_crc <= '0' ; 
-=======
          if ((go_rx_crc_lim or go_error_frame_buf) = '1') then
-            rx_crc <= '0' ;    
->>>>>>> 809e3f8feec04baf8283bcf71405a395cd823894
+            rx_crc <= '0';
          else
             if (go_rx_crc = '1') then
-               rx_crc <= '1' ; 
+               rx_crc <= '1';
             end if;
          end if;
       end if;
@@ -1429,16 +1198,11 @@ begin
       if (rst = '1') then
          rx_crc_lim <= '0'; 
       elsif rising_edge(clk) then
-<<<<<<< HEAD
-         if ((go_rx_ack or go_error_frame_xhdl33) = '1') then
-            rx_crc_lim <= '0' ; 
-=======
          if ((go_rx_ack or go_error_frame_buf) = '1') then
-            rx_crc_lim <= '0' ;    
->>>>>>> 809e3f8feec04baf8283bcf71405a395cd823894
+            rx_crc_lim <= '0';
          else
             if (go_rx_crc_lim = '1') then
-               rx_crc_lim <= '1' ; 
+               rx_crc_lim <= '1';
             end if;
          end if;
       end if;
@@ -1450,16 +1214,11 @@ begin
       if (rst = '1') then
          rx_ack <= '0'; 
       elsif rising_edge(clk) then
-<<<<<<< HEAD
-         if ((go_rx_ack_lim or go_error_frame_xhdl33) = '1') then
-            rx_ack <= '0' ; 
-=======
          if ((go_rx_ack_lim or go_error_frame_buf) = '1') then
-            rx_ack <= '0' ;    
->>>>>>> 809e3f8feec04baf8283bcf71405a395cd823894
+            rx_ack <= '0';
          else
             if (go_rx_ack = '1') then
-               rx_ack <= '1' ; 
+               rx_ack <= '1';
             end if;
          end if;
       end if;
@@ -1471,16 +1230,11 @@ begin
       if (rst = '1') then
          rx_ack_lim <= '0'; 
       elsif rising_edge(clk) then
-<<<<<<< HEAD
-         if ((go_rx_eof or go_error_frame_xhdl33) = '1') then
-            rx_ack_lim <= '0' ; 
-=======
          if ((go_rx_eof or go_error_frame_buf) = '1') then
-            rx_ack_lim <= '0' ;    
->>>>>>> 809e3f8feec04baf8283bcf71405a395cd823894
+            rx_ack_lim <= '0';
          else
             if (go_rx_ack_lim = '1') then
-               rx_ack_lim <= '1' ; 
+               rx_ack_lim <= '1';
             end if;
          end if;
       end if;
@@ -1492,16 +1246,11 @@ begin
       if (rst = '1') then
          rx_eof <= '0'; 
       elsif rising_edge(clk) then
-<<<<<<< HEAD
-         if ((go_rx_inter_xhdl9 or go_error_frame_xhdl33 or go_overload_frame_xhdl32) = '1') then
-            rx_eof <= '0' ; 
-=======
          if ((go_rx_inter_buf or go_error_frame_buf or go_overload_frame_buf) = '1') then
-            rx_eof <= '0' ;    
->>>>>>> 809e3f8feec04baf8283bcf71405a395cd823894
+            rx_eof <= '0';
          else
             if (go_rx_eof = '1') then
-               rx_eof <= '1' ; 
+               rx_eof <= '1';
             end if;
          end if;
       end if;
@@ -1511,23 +1260,13 @@ begin
    process (clk, rst)
    begin
       if (rst = '1') then
-<<<<<<< HEAD
-         rx_inter_xhdl11 <= '0'; 
-      elsif rising_edge(clk) then
-         if ((go_rx_idle or go_rx_id1 or go_overload_frame_xhdl32 or go_error_frame_xhdl33) = '1') then
-            rx_inter_xhdl11 <= '0' ; 
-         else
-            if (go_rx_inter_xhdl9 = '1') then
-               rx_inter_xhdl11 <= '1' ; 
-=======
-         rx_inter_buf <= '0';    
+         rx_inter_buf <= '0'; 
       elsif rising_edge(clk) then
          if ((go_rx_idle or go_rx_id1 or go_overload_frame_buf or go_error_frame_buf) = '1') then
-            rx_inter_buf <= '0' ;    
+            rx_inter_buf <= '0';
          else
             if (go_rx_inter_buf = '1') then
-               rx_inter_buf <= '1' ;    
->>>>>>> 809e3f8feec04baf8283bcf71405a395cd823894
+               rx_inter_buf <= '1';
             end if;
          end if;
       end if;
@@ -1540,7 +1279,7 @@ begin
          id <= (others => '0'); 
       elsif rising_edge(clk) then
          if (((sample_point and (rx_id1 or rx_id2)) and (not bit_de_stuff)) = '1') then
-               id <= id(27 downto 0) & sampled_bit ; 
+               id <= id(27 downto 0) & sampled_bit;
          end if;
       end if;
    end process;
@@ -1552,7 +1291,7 @@ begin
          rtr1 <= '0'; 
       elsif rising_edge(clk) then
          if (((sample_point and rx_rtr1) and (not bit_de_stuff)) = '1') then
-            rtr1 <= sampled_bit ; 
+            rtr1 <= sampled_bit;
          end if;
       end if;
    end process;
@@ -1564,7 +1303,7 @@ begin
          rtr2 <= '0'; 
       elsif rising_edge(clk) then
          if (((sample_point and rx_rtr2) and (not bit_de_stuff)) = '1') then
-            rtr2 <= sampled_bit ; 
+            rtr2 <= sampled_bit;
          end if;
       end if;
    end process;
@@ -1588,7 +1327,7 @@ begin
          data_len <= (others => '0'); 
       elsif rising_edge(clk) then
          if (((sample_point and rx_dlc) and (not bit_de_stuff)) = '1') then
-            data_len <= data_len(2 downto 0) & sampled_bit ; 
+            data_len <= data_len(2 downto 0) & sampled_bit;
          end if;
       end if;
    end process;
@@ -1611,9 +1350,9 @@ begin
          write_data <= '0'; 
       elsif rising_edge(clk) then
             if ((((sample_point and rx_data) and (not bit_de_stuff)) and (and_reduce(std_logic_vector(bit_cnt(2 downto 0))))) = '1') then
-               write_data <= '1' ; 
+               write_data <= '1';
             else
-               write_data <= '0' ; 
+               write_data <= '0';
             end if;
       end if;
    end process;
@@ -1651,7 +1390,7 @@ begin
          crc_in <= "000000000000000"; 
       elsif rising_edge(clk) then
             if (((sample_point and rx_crc) and (not bit_de_stuff)) = '1') then
-               crc_in <= crc_in(13 downto 0) & sampled_bit ; 
+               crc_in <= crc_in(13 downto 0) & sampled_bit;
             end if;
       end if;
    end process;
@@ -1662,11 +1401,7 @@ begin
       if (rst = '1') then
          bit_cnt <= "000000"; 
       elsif rising_edge(clk) then
-<<<<<<< HEAD
-            if ((go_rx_id1 or go_rx_id2 or go_rx_dlc or go_rx_data or go_rx_crc or go_rx_ack or go_rx_eof or go_rx_inter_xhdl9 or go_error_frame_xhdl33 or go_overload_frame_xhdl32) = '1') then
-=======
-            if ((go_rx_id1 or go_rx_dlc or go_rx_data or go_rx_crc or go_rx_ack or go_rx_eof or go_rx_inter_buf or go_error_frame_buf or go_overload_frame_buf) = '1') then
->>>>>>> 809e3f8feec04baf8283bcf71405a395cd823894
+            if ((go_rx_id1 or go_rx_id2 or go_rx_dlc or go_rx_data or go_rx_crc or go_rx_ack or go_rx_eof or go_rx_inter_buf or go_error_frame_buf or go_overload_frame_buf) = '1') then
                bit_cnt <= (others => '0');
             else
                if ((sample_point and (not bit_de_stuff)) = '1') then
@@ -1683,16 +1418,11 @@ begin
          eof_cnt <= "000"; 
       elsif rising_edge(clk) then
             if (sample_point = '1') then
-<<<<<<< HEAD
-               if ((go_rx_inter_xhdl9 or go_error_frame_xhdl33 or go_overload_frame_xhdl32) = '1') then
-                  eof_cnt <= "000" ; 
-=======
                if ((go_rx_inter_buf or go_error_frame_buf or go_overload_frame_buf) = '1') then
-                  eof_cnt <= "000" ;    
->>>>>>> 809e3f8feec04baf8283bcf71405a395cd823894
+                  eof_cnt <= "000";
                else
                   if (rx_eof = '1') then
-                     eof_cnt <= eof_cnt + "001" ; 
+                     eof_cnt <= eof_cnt + "001";
                   end if;
                end if;
          end if;
@@ -1706,10 +1436,10 @@ begin
          bit_stuff_cnt_en <= '0'; 
       elsif rising_edge(clk) then
             if (bit_de_stuff_set = '1') then
-               bit_stuff_cnt_en <= '1' ; 
+               bit_stuff_cnt_en <= '1';
             else
                if (bit_de_stuff_reset = '1') then
-                  bit_stuff_cnt_en <= '0' ; 
+                  bit_stuff_cnt_en <= '0';
                end if;
          end if;
       end if;
@@ -1722,16 +1452,16 @@ begin
          bit_stuff_cnt <= "001"; 
       elsif rising_edge(clk) then
             if (bit_de_stuff_reset = '1') then
-               bit_stuff_cnt <= "001" ; 
+               bit_stuff_cnt <= "001";
             else
                if ((sample_point and bit_stuff_cnt_en) = '1') then
                   if (bit_stuff_cnt = "101") then
-                     bit_stuff_cnt <= "001" ; 
+                     bit_stuff_cnt <= "001";
                   else
                      if (sampled_bit = sampled_bit_q) then
-                        bit_stuff_cnt <= bit_stuff_cnt + "001" ; 
+                        bit_stuff_cnt <= bit_stuff_cnt + "001";
                      else
-                        bit_stuff_cnt <= "001" ; 
+                        bit_stuff_cnt <= "001";
                      end if;
                   end if;
                end if;
@@ -1746,21 +1476,16 @@ begin
          bit_stuff_cnt_tx <= "001"; 
       elsif rising_edge(clk) then
             if ((reset_mode = '1') or (bit_de_stuff_reset = '1')) then
-               bit_stuff_cnt_tx <= "001" ; 
+               bit_stuff_cnt_tx <= "001";
             else
                if ((tx_point_q and bit_stuff_cnt_en) = '1') then
                   if (bit_stuff_cnt_tx = "101") then
-                     bit_stuff_cnt_tx <= "001" ; 
+                     bit_stuff_cnt_tx <= "001";
                   else
-<<<<<<< HEAD
-                     if (tx_xhdl29 = tx_q) then
-                        bit_stuff_cnt_tx <= bit_stuff_cnt_tx + "001" ; 
-=======
                      if (tx_buf = tx_q) then
-                        bit_stuff_cnt_tx <= bit_stuff_cnt_tx + "001" ;    
->>>>>>> 809e3f8feec04baf8283bcf71405a395cd823894
+                        bit_stuff_cnt_tx <= bit_stuff_cnt_tx + "001";
                      else
-                        bit_stuff_cnt_tx <= "001" ; 
+                        bit_stuff_cnt_tx <= "001";
                      end if;
                   end if;
                end if;
@@ -1775,16 +1500,11 @@ begin
    process (clk, rst)
    begin
       if (rst = '1') then
-         reset_mode_q <= '0' ; 
-         node_bus_off_q <= '0' ; 
+         reset_mode_q <= '0';
+         node_bus_off_q <= '0';
       elsif rising_edge(clk) then
-<<<<<<< HEAD
-         reset_mode_q <= reset_mode ; 
-         node_bus_off_q <= node_bus_off_xhdl13 ; 
-=======
-         reset_mode_q <= reset_mode ;    
-         node_bus_off_q <= node_bus_off_buf ;    
->>>>>>> 809e3f8feec04baf8283bcf71405a395cd823894
+         reset_mode_q <= reset_mode;
+         node_bus_off_q <= node_bus_off_buf;
       end if;
    end process;
 
@@ -1794,10 +1514,10 @@ begin
          crc_enable <= '0'; 
       elsif rising_edge(clk) then
          if (rst_crc_enable = '1') then
-            crc_enable <= '0' ; 
+            crc_enable <= '0';
          else
             if (go_crc_enable = '1') then
-               crc_enable <= '1' ; 
+               crc_enable <= '1';
             end if;
          end if;
       end if;
@@ -1810,10 +1530,10 @@ begin
          crc_err <= '0'; 
       elsif rising_edge(clk) then
          if ((reset_mode or error_frame_ended) = '1') then
-            crc_err <= '0' ; 
+            crc_err <= '0';
          else
             if (go_rx_ack = '1') then
-               crc_err <= to_std_logic(crc_in /= calculated_crc) ; 
+               crc_err <= to_std_logic(crc_in /= calculated_crc);
             end if;
          end if;
       end if;
@@ -1826,16 +1546,11 @@ begin
       if (rst = '1') then
          ack_err_latched <= '0'; 
       elsif rising_edge(clk) then
-<<<<<<< HEAD
-         if ((reset_mode or error_frame_ended or go_overload_frame_xhdl32) = '1') then
-            ack_err_latched <= '0' ; 
-=======
          if ((reset_mode or error_frame_ended or go_overload_frame_buf) = '1') then
-            ack_err_latched <= '0' ;    
->>>>>>> 809e3f8feec04baf8283bcf71405a395cd823894
+            ack_err_latched <= '0';
          else
             if (ack_err = '1') then
-               ack_err_latched <= '1' ; 
+               ack_err_latched <= '1';
             end if;
          end if;
       end if;
@@ -1846,16 +1561,11 @@ begin
       if (rst = '1') then
          bit_err_latched <= '0'; 
       elsif rising_edge(clk) then
-<<<<<<< HEAD
-         if ((reset_mode or error_frame_ended or go_overload_frame_xhdl32) = '1') then
-            bit_err_latched <= '0' ; 
-=======
          if ((reset_mode or error_frame_ended or go_overload_frame_buf) = '1') then
-            bit_err_latched <= '0' ;    
->>>>>>> 809e3f8feec04baf8283bcf71405a395cd823894
+            bit_err_latched <= '0';
          else
             if (bit_err = '1') then
-               bit_err_latched <= '1' ; 
+               bit_err_latched <= '1';
             end if;
          end if;
       end if;
@@ -1870,15 +1580,10 @@ begin
          rule3_exc1_1 <= '0'; 
       elsif rising_edge(clk) then
          if ((error_flag_over or rule3_exc1_2) = '1') then
-            rule3_exc1_1 <= '0' ; 
+            rule3_exc1_1 <= '0';
          else
-<<<<<<< HEAD
-            if (((transmitter_xhdl8 and node_error_passive_xhdl26) and ack_err) = '1') then
-               rule3_exc1_1 <= '1' ; 
-=======
             if (((transmitter_buf and node_error_passive_buf) and ack_err) = '1') then
-               rule3_exc1_1 <= '1' ;    
->>>>>>> 809e3f8feec04baf8283bcf71405a395cd823894
+               rule3_exc1_1 <= '1';
             end if;
          end if;
       end if;
@@ -1890,16 +1595,11 @@ begin
       if (rst = '1') then
          rule3_exc1_2 <= '0'; 
       elsif rising_edge(clk) then
-<<<<<<< HEAD
-         if ((go_error_frame_xhdl33 or rule3_exc1_2) = '1') then
-            rule3_exc1_2 <= '0' ; 
-=======
          if ((go_error_frame_buf or rule3_exc1_2) = '1') then
-            rule3_exc1_2 <= '0' ;    
->>>>>>> 809e3f8feec04baf8283bcf71405a395cd823894
+            rule3_exc1_2 <= '0';
          else
             if ((((rule3_exc1_1 and to_std_logic(error_cnt1 < "111")) and sample_point) and (not sampled_bit)) = '1') then
-               rule3_exc1_2 <= '1' ; 
+               rule3_exc1_2 <= '1';
             end if;
          end if;
       end if;
@@ -1910,16 +1610,11 @@ begin
       if (rst = '1') then
          stuff_err_latched <= '0'; 
       elsif rising_edge(clk) then
-<<<<<<< HEAD
-         if ((reset_mode or error_frame_ended or go_overload_frame_xhdl32) = '1') then
-            stuff_err_latched <= '0' ; 
-=======
          if ((reset_mode or error_frame_ended or go_overload_frame_buf) = '1') then
-            stuff_err_latched <= '0' ;    
->>>>>>> 809e3f8feec04baf8283bcf71405a395cd823894
+            stuff_err_latched <= '0';
          else
             if (stuff_err = '1') then
-               stuff_err_latched <= '1' ; 
+               stuff_err_latched <= '1';
             end if;
          end if;
       end if;
@@ -1930,16 +1625,11 @@ begin
       if (rst = '1') then
          form_err_latched <= '0'; 
       elsif rising_edge(clk) then
-<<<<<<< HEAD
-         if ((reset_mode or error_frame_ended or go_overload_frame_xhdl32) = '1') then
-            form_err_latched <= '0' ; 
-=======
          if ((reset_mode or error_frame_ended or go_overload_frame_buf) = '1') then
-            form_err_latched <= '0' ;    
->>>>>>> 809e3f8feec04baf8283bcf71405a395cd823894
+            form_err_latched <= '0';
          else
             if (form_err = '1') then
-               form_err_latched <= '1' ; 
+               form_err_latched <= '1';
             end if;
          end if;
       end if;
@@ -1964,19 +1654,11 @@ begin
       if (rst = '1') then
          error_frame <= '0'; 
       elsif rising_edge(clk) then
-<<<<<<< HEAD
-         if ((set_reset_mode_xhdl12 or error_frame_ended or go_overload_frame_xhdl32) = '1') then
-            error_frame <= '0' ; 
-         else
-            if (go_error_frame_xhdl33 = '1') then
-               error_frame <= '1' ; 
-=======
          if ((set_reset_mode_buf or error_frame_ended or go_overload_frame_buf) = '1') then
-            error_frame <= '0' ;    
+            error_frame <= '0';
          else
             if (go_error_frame_buf = '1') then
-               error_frame <= '1' ;    
->>>>>>> 809e3f8feec04baf8283bcf71405a395cd823894
+               error_frame <= '1';
             end if;
          end if;
       end if;
@@ -1987,16 +1669,11 @@ begin
       if (rst = '1') then
          error_cnt1 <= "000"; 
       elsif rising_edge(clk) then
-<<<<<<< HEAD
-         if ((error_frame_ended or go_error_frame_xhdl33 or go_overload_frame_xhdl32) = '1') then
-            error_cnt1 <= "000" ; 
-=======
          if ((error_frame_ended or go_error_frame_buf or go_overload_frame_buf) = '1') then
-            error_cnt1 <= "000" ;    
->>>>>>> 809e3f8feec04baf8283bcf71405a395cd823894
+            error_cnt1 <= "000";
          else
             if (((error_frame and tx_point) and to_std_logic(error_cnt1 < "111")) = '1') then
-               error_cnt1 <= error_cnt1 + "001" ; 
+               error_cnt1 <= error_cnt1 + "001";
             end if;
          end if;
       end if;
@@ -2008,16 +1685,11 @@ begin
       if (rst = '1') then
          error_flag_over_latched <= '0'; 
       elsif rising_edge(clk) then
-<<<<<<< HEAD
-         if ((error_frame_ended or go_error_frame_xhdl33 or go_overload_frame_xhdl32) = '1') then
-            error_flag_over_latched <= '0' ; 
-=======
          if ((error_frame_ended or go_error_frame_buf or go_overload_frame_buf) = '1') then
-            error_flag_over_latched <= '0' ;    
->>>>>>> 809e3f8feec04baf8283bcf71405a395cd823894
+            error_flag_over_latched <= '0';
          else
             if (error_flag_over = '1') then
-               error_flag_over_latched <= '1' ; 
+               error_flag_over_latched <= '1';
             end if;
          end if;
       end if;
@@ -2028,16 +1700,11 @@ begin
       if (rst = '1') then
          enable_error_cnt2 <= '0'; 
       elsif rising_edge(clk) then
-<<<<<<< HEAD
-         if ((error_frame_ended or go_error_frame_xhdl33 or go_overload_frame_xhdl32) = '1') then
-            enable_error_cnt2 <= '0' ; 
-=======
          if ((error_frame_ended or go_error_frame_buf or go_overload_frame_buf) = '1') then
-            enable_error_cnt2 <= '0' ;    
->>>>>>> 809e3f8feec04baf8283bcf71405a395cd823894
+            enable_error_cnt2 <= '0';
          else
             if ((error_frame and (error_flag_over and sampled_bit)) = '1') then
-               enable_error_cnt2 <= '1' ; 
+               enable_error_cnt2 <= '1';
             end if;
          end if;
       end if;
@@ -2048,16 +1715,11 @@ begin
       if (rst = '1') then
          error_cnt2 <= "000"; 
       elsif rising_edge(clk) then
-<<<<<<< HEAD
-         if ((error_frame_ended or go_error_frame_xhdl33 or go_overload_frame_xhdl32) = '1') then
-            error_cnt2 <= "000" ; 
-=======
          if ((error_frame_ended or go_error_frame_buf or go_overload_frame_buf) = '1') then
-            error_cnt2 <= "000" ;    
->>>>>>> 809e3f8feec04baf8283bcf71405a395cd823894
+            error_cnt2 <= "000";
          else
             if ((enable_error_cnt2 and tx_point) = '1') then
-               error_cnt2 <= error_cnt2 + "001" ; 
+               error_cnt2 <= error_cnt2 + "001";
             end if;
          end if;
       end if;
@@ -2068,16 +1730,11 @@ begin
       if (rst = '1') then
          delayed_dominant_cnt <= "000"; 
       elsif rising_edge(clk) then
-<<<<<<< HEAD
-         if ((enable_error_cnt2 or go_error_frame_xhdl33 or enable_overload_cnt2 or go_overload_frame_xhdl32) = '1') then
-            delayed_dominant_cnt <= "000" ; 
-=======
          if ((enable_error_cnt2 or go_error_frame_buf or enable_overload_cnt2 or go_overload_frame_buf) = '1') then
-            delayed_dominant_cnt <= "000" ;    
->>>>>>> 809e3f8feec04baf8283bcf71405a395cd823894
+            delayed_dominant_cnt <= "000";
          else
             if (((sample_point and (not sampled_bit)) and to_std_logic((error_cnt1 = "111") or (overload_cnt1 = "111"))) = '1') then
-               delayed_dominant_cnt <= delayed_dominant_cnt + "001" ; 
+               delayed_dominant_cnt <= delayed_dominant_cnt + "001";
             end if;
          end if;
       end if;
@@ -2089,19 +1746,14 @@ begin
       if (rst = '1') then
          passive_cnt <= "001"; 
       elsif rising_edge(clk) then
-<<<<<<< HEAD
-         if ((error_frame_ended or go_error_frame_xhdl33 or go_overload_frame_xhdl32 or first_compare_bit) = '1') then
-            passive_cnt <= "001" ; 
-=======
          if ((error_frame_ended or go_error_frame_buf or go_overload_frame_buf or first_compare_bit) = '1') then
-            passive_cnt <= "001" ;    
->>>>>>> 809e3f8feec04baf8283bcf71405a395cd823894
+            passive_cnt <= "001";
          else
             if ((sample_point and to_std_logic(passive_cnt < "110")) = '1') then
                if (((error_frame and (not enable_error_cnt2)) and to_std_logic(sampled_bit = sampled_bit_q)) = '1') then
-                  passive_cnt <= passive_cnt + "001" ; 
+                  passive_cnt <= passive_cnt + "001";
                else
-                  passive_cnt <= "001" ; 
+                  passive_cnt <= "001";
                end if;
             end if;
          end if;
@@ -2114,13 +1766,8 @@ begin
       if (rst = '1') then
          first_compare_bit <= '0'; 
       elsif rising_edge(clk) then
-<<<<<<< HEAD
-         if (go_error_frame_xhdl33 = '1') then
-            first_compare_bit <= '1' ; 
-=======
          if (go_error_frame_buf = '1') then
-            first_compare_bit <= '1' ;    
->>>>>>> 809e3f8feec04baf8283bcf71405a395cd823894
+            first_compare_bit <= '1';
          else
             if (sample_point = '1') then
                first_compare_bit <= '0'; 
@@ -2133,23 +1780,13 @@ begin
    process (clk, rst)
    begin
       if (rst = '1') then
-<<<<<<< HEAD
-         overload_frame_xhdl4 <= '0'; 
-      elsif rising_edge(clk) then
-         if ((overload_frame_ended or go_error_frame_xhdl33) = '1') then
-            overload_frame_xhdl4 <= '0' ; 
-         else
-            if (go_overload_frame_xhdl32 = '1') then
-               overload_frame_xhdl4 <= '1' ; 
-=======
-         overload_frame <= '0';    
+         overload_frame <= '0'; 
       elsif rising_edge(clk) then
          if ((overload_frame_ended or go_error_frame_buf) = '1') then
-            overload_frame <= '0' ;    
+            overload_frame <= '0';
          else
             if (go_overload_frame_buf = '1') then
-               overload_frame <= '1' ;    
->>>>>>> 809e3f8feec04baf8283bcf71405a395cd823894
+               overload_frame <= '1';
             end if;
          end if;
       end if;
@@ -2160,19 +1797,11 @@ begin
       if (rst = '1') then
          overload_cnt1 <= "000"; 
       elsif rising_edge(clk) then
-<<<<<<< HEAD
-         if ((overload_frame_ended or go_error_frame_xhdl33 or go_overload_frame_xhdl32) = '1') then
-            overload_cnt1 <= "000" ; 
-         else
-            if (((overload_frame_xhdl4 and tx_point) and to_std_logic(overload_cnt1 < "111")) = '1') then
-               overload_cnt1 <= overload_cnt1 + "001" ; 
-=======
          if ((overload_frame_ended or go_error_frame_buf or go_overload_frame_buf) = '1') then
-            overload_cnt1 <= "000" ;    
+            overload_cnt1 <= "000";
          else
             if (((overload_frame and tx_point) and to_std_logic(overload_cnt1 < "111")) = '1') then
-               overload_cnt1 <= overload_cnt1 + "001" ;    
->>>>>>> 809e3f8feec04baf8283bcf71405a395cd823894
+               overload_cnt1 <= overload_cnt1 + "001";
             end if;
          end if;
       end if;
@@ -2184,19 +1813,11 @@ begin
       if (rst = '1') then
          enable_overload_cnt2 <= '0'; 
       elsif rising_edge(clk) then
-<<<<<<< HEAD
-         if ((overload_frame_ended or go_error_frame_xhdl33 or go_overload_frame_xhdl32) = '1') then
-            enable_overload_cnt2 <= '0' ; 
-         else
-            if ((overload_frame_xhdl4 and (overload_flag_over and sampled_bit)) = '1') then
-               enable_overload_cnt2 <= '1' ; 
-=======
          if ((overload_frame_ended or go_error_frame_buf or go_overload_frame_buf) = '1') then
-            enable_overload_cnt2 <= '0' ;    
+            enable_overload_cnt2 <= '0';
          else
             if ((overload_frame and (overload_flag_over and sampled_bit)) = '1') then
-               enable_overload_cnt2 <= '1' ;    
->>>>>>> 809e3f8feec04baf8283bcf71405a395cd823894
+               enable_overload_cnt2 <= '1';
             end if;
          end if;
       end if;
@@ -2207,16 +1828,11 @@ begin
       if (rst = '1') then
          overload_cnt2 <= "000"; 
       elsif rising_edge(clk) then
-<<<<<<< HEAD
-         if ((overload_frame_ended or go_error_frame_xhdl33 or go_overload_frame_xhdl32) = '1') then
-            overload_cnt2 <= "000" ; 
-=======
          if ((overload_frame_ended or go_error_frame_buf or go_overload_frame_buf) = '1') then
-            overload_cnt2 <= "000" ;    
->>>>>>> 809e3f8feec04baf8283bcf71405a395cd823894
+            overload_cnt2 <= "000";
          else
             if ((enable_overload_cnt2 and tx_point) = '1') then
-               overload_cnt2 <= overload_cnt2 + "001" ; 
+               overload_cnt2 <= overload_cnt2 + "001";
             end if;
          end if;
       end if;
@@ -2228,71 +1844,38 @@ begin
    begin
       if ((reset_mode or node_bus_off_buf) = '1') then
          -- Reset or node_bus_off
-<<<<<<< HEAD
-         
-         tx_next_xhdl30_xhdl105 := '1'; 
-=======
-         tx_next_buf <= '1';    
->>>>>>> 809e3f8feec04baf8283bcf71405a395cd823894
+         tx_next_buf <= '1'; 
       else
          if ((go_error_frame_buf or error_frame) = '1') then
             -- Transmitting error frame
             
             if (error_cnt1 < "110") then
-<<<<<<< HEAD
-               if (node_error_passive_xhdl26 = '1') then
-                  tx_next_xhdl30_xhdl105 := '1'; 
-               else
-                  tx_next_xhdl30_xhdl105 := '0'; 
-               end if;
-            else
-               tx_next_xhdl30_xhdl105 := '1'; 
-=======
                if (node_error_passive_buf = '1') then
-                  tx_next_buf <= '1';    
+                  tx_next_buf <= '1'; 
                else
-                  tx_next_buf <= '0';    
+                  tx_next_buf <= '0'; 
                end if;
             else
-               tx_next_buf <= '1';    
->>>>>>> 809e3f8feec04baf8283bcf71405a395cd823894
+               tx_next_buf <= '1'; 
             end if;
          else
             if ((go_overload_frame_buf or overload_frame) = '1') then
                -- Transmitting overload frame
                if (overload_cnt1 < "110") then
-<<<<<<< HEAD
-                  tx_next_xhdl30_xhdl105 := '0'; 
+                  tx_next_buf <= '0'; 
                else
-                  tx_next_xhdl30_xhdl105 := '1'; 
-=======
-                  tx_next_buf <= '0';    
-               else
-                  tx_next_buf <= '1';    
->>>>>>> 809e3f8feec04baf8283bcf71405a395cd823894
+                  tx_next_buf <= '1'; 
                end if;
             else
                if ((go_tx_buf or tx_state_buf) = '1') then
                   -- Transmitting message
-<<<<<<< HEAD
-                  
-                  tx_next_xhdl30_xhdl105 := ((not bit_de_stuff_tx) and tx_bit) or (bit_de_stuff_tx and (not tx_q)); 
-=======
-                  tx_next_buf <= ((not bit_de_stuff_tx) and tx_bit) or (bit_de_stuff_tx and (not tx_q));    
->>>>>>> 809e3f8feec04baf8283bcf71405a395cd823894
+                  tx_next_buf <= ((not bit_de_stuff_tx) and tx_bit) or (bit_de_stuff_tx and (not tx_q)); 
                else
                   if (send_ack_buf = '1') then
                      -- Acknowledge
-<<<<<<< HEAD
-                     
-                     tx_next_xhdl30_xhdl105 := '0'; 
+                     tx_next_buf <= '0'; 
                   else
-                     tx_next_xhdl30_xhdl105 := '1'; 
-=======
-                     tx_next_buf <= '0';    
-                  else
-                     tx_next_buf <= '1';    
->>>>>>> 809e3f8feec04baf8283bcf71405a395cd823894
+                     tx_next_buf <= '1'; 
                   end if;
                end if;
             end if;
@@ -2303,23 +1886,13 @@ begin
    process (clk, rst)
    begin
       if (rst = '1') then
-<<<<<<< HEAD
-         tx_xhdl29 <= '1'; 
+         tx_buf <= '1'; 
       elsif rising_edge(clk) then
          if (reset_mode = '1') then
-            tx_xhdl29 <= '1'; 
+            tx_buf <= '1'; 
          else
             if (tx_point = '1') then
-               tx_xhdl29 <= tx_next_xhdl30 ; 
-=======
-         tx_buf <= '1';    
-      elsif rising_edge(clk) then
-         if (reset_mode = '1') then
-            tx_buf <= '1';    
-         else
-            if (tx_point = '1') then
-               tx_buf <= tx_next_buf ;    
->>>>>>> 809e3f8feec04baf8283bcf71405a395cd823894
+               tx_buf <= tx_next_buf;
             end if;
          end if;
       end if;
@@ -2328,17 +1901,13 @@ begin
    process (clk, rst)
    begin
       if (rst = '1') then
-         tx_q <= '0' ; 
+         tx_q <= '0';
       elsif rising_edge(clk) then
          if (reset_mode = '1') then
-            tx_q <= '0' ; 
+            tx_q <= '0';
          else
             if (tx_point = '1') then
-<<<<<<< HEAD
-               tx_q <= tx_xhdl29 and (not go_early_tx_latched) ; 
-=======
-               tx_q <= tx_buf and (not go_early_tx_latched) ;    
->>>>>>> 809e3f8feec04baf8283bcf71405a395cd823894
+               tx_q <= tx_buf and (not go_early_tx_latched);
             end if;
          end if;
       end if;
@@ -2348,12 +1917,12 @@ begin
    process (clk, rst)
    begin
       if (rst = '1') then
-         tx_point_q <= '0' ; 
+         tx_point_q <= '0';
       elsif rising_edge(clk) then
          if (reset_mode = '1') then
-            tx_point_q <= '0' ; 
+            tx_point_q <= '0';
          else
-            tx_point_q <= tx_point ; 
+            tx_point_q <= tx_point;
          end if;
       end if;
    end process;
@@ -2399,13 +1968,8 @@ begin
         end if;
     end process;
 
-<<<<<<< HEAD
    limited_tx_cnt <= b"111111" when TxFrame.Dlc(3) = '1' else (unsigned(TxFrame.Dlc(2 downto 0)) & b"000") - 1;
-   rst_tx_pointer <= ((((((not bit_de_stuff_tx) and tx_point) and (not rx_data))                  ) and TxFrame.Ide   ) and   to_std_logic(tx_pointer = "100110")) or ((((((not bit_de_stuff_tx) and tx_point) and (not rx_data))                  ) and (not TxFrame.Ide   )) and  to_std_logic(tx_pointer = b"010010")) or                                                                                                                                   (((((not bit_de_stuff_tx) and tx_point) and rx_data)                  ) and   to_std_logic(tx_pointer = limited_tx_cnt    )) or                                                                                                                                       (tx_point and rx_crc_lim) or (go_rx_idle) or (reset_mode) or (overload_frame_xhdl4) or (error_frame) ;
-=======
-   limited_tx_cnt_std <= b"111111" when TxFrame.Dlc(3) = '1' else (unsigned(TxFrame.Dlc(2 downto 0)) & b"000") - 1;
-   rst_tx_pointer <= (((((not bit_de_stuff_tx) and tx_point) and (not rx_data))) and to_std_logic(tx_pointer = b"010010")) or (((((not bit_de_stuff_tx) and tx_point) and rx_data)) and to_std_logic(tx_pointer = limited_tx_cnt_std)) or (tx_point and rx_crc_lim) or (go_rx_idle) or (reset_mode) or (overload_frame) or (error_frame) ;
->>>>>>> 809e3f8feec04baf8283bcf71405a395cd823894
+   rst_tx_pointer <= ((((((not bit_de_stuff_tx) and tx_point) and (not rx_data))                  ) and TxFrame.Ide   ) and   to_std_logic(tx_pointer = "100110")) or ((((((not bit_de_stuff_tx) and tx_point) and (not rx_data))                  ) and (not TxFrame.Ide   )) and  to_std_logic(tx_pointer = b"010010")) or                                                                                                                                   (((((not bit_de_stuff_tx) and tx_point) and rx_data)                  ) and   to_std_logic(tx_pointer = limited_tx_cnt    )) or                                                                                                                                       (tx_point and rx_crc_lim) or (go_rx_idle) or (reset_mode) or (overload_frame) or (error_frame) ;
 
    process (clk, rst)
    begin
@@ -2426,21 +1990,13 @@ begin
    process (clk, rst)
    begin
       if (rst = '1') then
-<<<<<<< HEAD
-         need_to_tx_xhdl20 <= '0'; 
-=======
-         need_to_tx_buf <= '0';    
->>>>>>> 809e3f8feec04baf8283bcf71405a395cd823894
+         need_to_tx_buf <= '0'; 
       elsif rising_edge(clk) then
          if ((tx_successful_buf or reset_mode) = '1') then
             need_to_tx_buf <= '0' ;
          else
             if ((tx_request and sample_point) = '1') then
-<<<<<<< HEAD
-               need_to_tx_xhdl20 <= '1' ; 
-=======
-               need_to_tx_buf <= '1' ;    
->>>>>>> 809e3f8feec04baf8283bcf71405a395cd823894
+               need_to_tx_buf <= '1';
             end if;
          end if;
       end if;
@@ -2455,10 +2011,10 @@ begin
          go_early_tx_latched <= '0'; 
       elsif rising_edge(clk) then
          if ((reset_mode or tx_point) = '1') then
-            go_early_tx_latched <= '0' ; 
+            go_early_tx_latched <= '0';
          else
             if (go_early_tx = '1') then
-               go_early_tx_latched <= '1' ; 
+               go_early_tx_latched <= '1';
             end if;
          end if;
       end if;
@@ -2468,23 +2024,13 @@ begin
    process (clk, rst)
    begin
       if (rst = '1') then
-<<<<<<< HEAD
-         tx_state_xhdl2 <= '0'; 
-      elsif rising_edge(clk) then
-         if ((reset_mode or go_rx_inter_xhdl9 or error_frame or arbitration_lost) = '1') then
-            tx_state_xhdl2 <= '0' ; 
-         else
-            if (go_tx_xhdl34 = '1') then
-               tx_state_xhdl2 <= '1' ; 
-=======
-         tx_state_buf <= '0';    
+         tx_state_buf <= '0'; 
       elsif rising_edge(clk) then
          if ((reset_mode or go_rx_inter_buf or error_frame or arbitration_lost) = '1') then
-            tx_state_buf <= '0' ;    
+            tx_state_buf <= '0';
          else
             if (go_tx_buf = '1') then
-               tx_state_buf <= '1' ;    
->>>>>>> 809e3f8feec04baf8283bcf71405a395cd823894
+               tx_state_buf <= '1';
             end if;
          end if;
       end if;
@@ -2493,21 +2039,12 @@ begin
    process (clk, rst)
    begin
       if (rst = '1') then
-<<<<<<< HEAD
-         tx_state_q_xhdl3 <= '0' ; 
+         tx_state_q_buf <= '0';
       elsif rising_edge(clk) then
          if (reset_mode = '1') then
-            tx_state_q_xhdl3 <= '0' ; 
+            tx_state_q_buf <= '0';
          else
-            tx_state_q_xhdl3 <= tx_state_xhdl2 ; 
-=======
-         tx_state_q_buf <= '0' ;    
-      elsif rising_edge(clk) then
-         if (reset_mode = '1') then
-            tx_state_q_buf <= '0' ;    
-         else
-            tx_state_q_buf <= tx_state_buf ;    
->>>>>>> 809e3f8feec04baf8283bcf71405a395cd823894
+            tx_state_q_buf <= tx_state_buf;
          end if;
       end if;
    end process;
@@ -2516,23 +2053,13 @@ begin
    process (clk, rst)
    begin
       if (rst = '1') then
-<<<<<<< HEAD
-         transmitter_xhdl8 <= '0'; 
-      elsif rising_edge(clk) then
-         if (go_tx_xhdl34 = '1') then
-            transmitter_xhdl8 <= '1' ; 
-         else
-            if ((reset_mode or go_rx_idle or (suspend and go_rx_id1)) = '1') then
-               transmitter_xhdl8 <= '0' ; 
-=======
-         transmitter_buf <= '0';    
+         transmitter_buf <= '0'; 
       elsif rising_edge(clk) then
          if (go_tx_buf = '1') then
-            transmitter_buf <= '1' ;    
+            transmitter_buf <= '1';
          else
             if ((reset_mode or go_rx_idle or (suspend and go_rx_id1)) = '1') then
-               transmitter_buf <= '0' ;    
->>>>>>> 809e3f8feec04baf8283bcf71405a395cd823894
+               transmitter_buf <= '0';
             end if;
          end if;
       end if;
@@ -2543,23 +2070,13 @@ begin
    process (clk, rst)
    begin
       if (rst = '1') then
-<<<<<<< HEAD
-         transmitting_q <= '0'; 
-      elsif rising_edge(clk) then
-         if ((go_error_frame_xhdl33 or go_overload_frame_xhdl32 or go_tx_xhdl34 or send_ack_xhdl35) = '1') then
-            transmitting_q <= '1' ; 
-         else
-            if ((reset_mode or go_rx_idle or (go_rx_id1 and (not tx_state_xhdl2)) or (arbitration_lost and tx_state_xhdl2)) = '1') then
-               transmitting_q <= '0' ; 
-=======
-         transmitting_buf <= '0';    
+         transmitting_buf <= '0'; 
       elsif rising_edge(clk) then
          if ((go_error_frame_buf or go_overload_frame_buf or go_tx_buf or send_ack_buf) = '1') then
-            transmitting_buf <= '1' ;    
+            transmitting_buf <= '1';
          else
             if ((reset_mode or go_rx_idle or (go_rx_id1 and (not tx_state_buf)) or (arbitration_lost and tx_state_buf)) = '1') then
-               transmitting_buf <= '0' ;    
->>>>>>> 809e3f8feec04baf8283bcf71405a395cd823894
+               transmitting_buf <= '0';
             end if;
          end if;
       end if;
@@ -2571,15 +2088,10 @@ begin
          suspend <= '0'; 
       elsif rising_edge(clk) then
          if ((reset_mode or (sample_point and to_std_logic(susp_cnt = "111"))) = '1') then
-            suspend <= '0' ; 
+            suspend <= '0';
          else
-<<<<<<< HEAD
-            if (((not_first_bit_of_inter_xhdl10 and transmitter_xhdl8) and node_error_passive_xhdl26) = '1') then
-               suspend <= '1' ; 
-=======
             if (((not_first_bit_of_inter_buf and transmitter_buf) and node_error_passive_buf) = '1') then
-               suspend <= '1' ;    
->>>>>>> 809e3f8feec04baf8283bcf71405a395cd823894
+               suspend <= '1';
             end if;
          end if;
       end if;
@@ -2591,10 +2103,10 @@ begin
          susp_cnt_en <= '0'; 
       elsif rising_edge(clk) then
          if ((reset_mode or (sample_point and to_std_logic(susp_cnt = "111"))) = '1') then
-            susp_cnt_en <= '0' ; 
+            susp_cnt_en <= '0';
          else
             if (((suspend and sample_point) and last_bit_of_inter) = '1') then
-               susp_cnt_en <= '1' ; 
+               susp_cnt_en <= '1';
             end if;
          end if;
       end if;
@@ -2606,10 +2118,10 @@ begin
          susp_cnt <= "000"; 
       elsif rising_edge(clk) then
          if ((reset_mode or (sample_point and to_std_logic(susp_cnt = "111"))) = '1') then
-            susp_cnt <= "000" ; 
+            susp_cnt <= "000";
          else
             if ((susp_cnt_en and sample_point) = '1') then
-               susp_cnt <= susp_cnt + "001" ; 
+               susp_cnt <= susp_cnt + "001";
             end if;
          end if;
       end if;
@@ -2621,10 +2133,10 @@ begin
          finish_msg <= '0'; 
       elsif rising_edge(clk) then
          if ((go_rx_idle or go_rx_id1 or error_frame or reset_mode) = '1') then
-            finish_msg <= '0' ; 
+            finish_msg <= '0';
          else
             if (go_rx_crc_lim = '1') then
-               finish_msg <= '1' ; 
+               finish_msg <= '1';
             end if;
          end if;
       end if;
@@ -2636,15 +2148,10 @@ begin
          arbitration_lost <= '0'; 
       elsif rising_edge(clk) then
          if ((go_rx_idle or error_frame_ended) = '1') then
-            arbitration_lost <= '0' ; 
+            arbitration_lost <= '0';
          else
-<<<<<<< HEAD
-            if (((((transmitter_xhdl8 and sample_point) and tx_xhdl29) and arbitration_field) and not sampled_bit) = '1') then
-               arbitration_lost <= '1' ; 
-=======
             if (((((transmitter_buf and sample_point) and tx_buf) and arbitration_field) and not sampled_bit) = '1') then
-               arbitration_lost <= '1' ;    
->>>>>>> 809e3f8feec04baf8283bcf71405a395cd823894
+               arbitration_lost <= '1';
             end if;
          end if;
       end if;
@@ -2667,13 +2174,8 @@ begin
          arbitration_cnt <= (others =>'0'); 
       elsif rising_edge(clk) then
           if ((sample_point = '1') and (bit_de_stuff = '0')) then
-<<<<<<< HEAD
-            if (arbitration_field_d = '1') then
-               arbitration_cnt <= arbitration_cnt + "01"; 
-=======
             if (arbitration_field_q = '1') then
-               arbitration_cnt <= arbitration_cnt + "01";    
->>>>>>> 809e3f8feec04baf8283bcf71405a395cd823894
+               arbitration_cnt <= arbitration_cnt + "01"; 
             else 
                arbitration_cnt <= (others =>'0'); 
             end if;
@@ -2694,27 +2196,15 @@ begin
                  if (rx_err_cnt_buf > 127) then
                     rx_err_cnt_buf <= to_unsigned(127, rx_err_cnt_buf'length);
                  else
-<<<<<<< HEAD
-                    rx_err_cnt_xhdl15 <= rx_err_cnt_xhdl15 - 1; 
-                 end if;
-              else
-                 if (rx_err_cnt_xhdl15 < 128) then
-                    if ((go_error_frame_xhdl33 and (not rule5)) = '1') then
-                       rx_err_cnt_xhdl15 <= rx_err_cnt_xhdl15 + 1; 
-                    else
-                       if ((((((error_flag_over and (not error_flag_over_latched)) and sample_point) and (not sampled_bit)) and to_std_logic(error_cnt1 = 7)) or (go_error_frame_xhdl33 and rule5) or ((sample_point and (not sampled_bit)) and to_std_logic(delayed_dominant_cnt = 7))) = '1') then
-                          rx_err_cnt_xhdl15 <= rx_err_cnt_xhdl15 + 8; 
-=======
-                    rx_err_cnt_buf <= rx_err_cnt_buf - 1;    
+                    rx_err_cnt_buf <= rx_err_cnt_buf - 1; 
                  end if;
               else
                  if (rx_err_cnt_buf < 128) then
                     if ((go_error_frame_buf and (not rule5)) = '1') then
-                       rx_err_cnt_buf <= rx_err_cnt_buf + 1;    
+                       rx_err_cnt_buf <= rx_err_cnt_buf + 1; 
                     else
                        if ((((((error_flag_over and (not error_flag_over_latched)) and sample_point) and (not sampled_bit)) and to_std_logic(error_cnt1 = 7)) or (go_error_frame_buf and rule5) or ((sample_point and (not sampled_bit)) and to_std_logic(delayed_dominant_cnt = 7))) = '1') then
-                          rx_err_cnt_buf <= rx_err_cnt_buf + 8;    
->>>>>>> 809e3f8feec04baf8283bcf71405a395cd823894
+                          rx_err_cnt_buf <= rx_err_cnt_buf + 8; 
                        end if;
                     end if;
                  end if;
@@ -2732,13 +2222,8 @@ begin
         if (set_reset_mode_buf = '1') then
            tx_err_cnt_buf <= to_unsigned(128, tx_err_cnt_buf'length);
         else
-<<<<<<< HEAD
-           if ((to_std_logic(tx_err_cnt_xhdl16 > 0) and (tx_successful_xhdl19 or bus_free)) = '1') then
-              tx_err_cnt_xhdl16 <= tx_err_cnt_xhdl16 - 1; 
-=======
            if ((to_std_logic(tx_err_cnt_buf > 0) and (tx_successful_buf or bus_free)) = '1') then
-              tx_err_cnt_buf <= tx_err_cnt_buf - 1;    
->>>>>>> 809e3f8feec04baf8283bcf71405a395cd823894
+              tx_err_cnt_buf <= tx_err_cnt_buf - 1; 
            else
               if ((transmitter_buf and (not arbitration_lost)) = '1') then
                  if ((((sample_point and (not sampled_bit)) and to_std_logic(delayed_dominant_cnt = 7)) or (go_error_frame_buf and rule5) or ((go_error_frame_buf and (not ((transmitter_buf and node_error_passive_buf) and ack_err))) and (not (((((transmitter_buf and stuff_err) and arbitration_field) and sample_point) and tx_buf) and (not sampled_bit)))) or (error_frame and rule3_exc1_2)) = '1') then
@@ -2753,23 +2238,13 @@ begin
    process (clk, rst)
    begin
       if (rst = '1') then
-<<<<<<< HEAD
-         node_error_passive_xhdl26 <= '0'; 
-      elsif rising_edge(clk) then
-         if ((rx_err_cnt_xhdl15 < b"010000000") and (tx_err_cnt_xhdl16 < b"010000000")) then
-            node_error_passive_xhdl26 <= '0' ; 
-         else
-            if (((to_std_logic((rx_err_cnt_xhdl15 >= b"010000000") or (tx_err_cnt_xhdl16 >= b"010000000")) and (error_frame_ended or go_error_frame_xhdl33 or ((not reset_mode) and reset_mode_q))) and (not node_bus_off_xhdl13)) = '1') then
-               node_error_passive_xhdl26 <= '1' ; 
-=======
-         node_error_passive_buf <= '0';    
+         node_error_passive_buf <= '0'; 
       elsif rising_edge(clk) then
          if ((rx_err_cnt_buf < b"010000000") and (tx_err_cnt_buf < b"010000000")) then
-            node_error_passive_buf <= '0' ;    
+            node_error_passive_buf <= '0';
          else
             if (((to_std_logic((rx_err_cnt_buf >= b"010000000") or (tx_err_cnt_buf >= b"010000000")) and (error_frame_ended or go_error_frame_buf or ((not reset_mode) and reset_mode_q))) and (not node_bus_off_buf)) = '1') then
-               node_error_passive_buf <= '1' ;    
->>>>>>> 809e3f8feec04baf8283bcf71405a395cd823894
+               node_error_passive_buf <= '1';
             end if;
          end if;
       end if;
@@ -2778,23 +2253,13 @@ begin
    process (clk, rst)
    begin
       if (rst = '1') then
-<<<<<<< HEAD
-         node_bus_off_xhdl13 <= '0'; 
-      elsif rising_edge(clk) then
-         if (((to_std_logic((rx_err_cnt_xhdl15 = b"000000000") and (tx_err_cnt_xhdl16 = b"000000000")) and (not reset_mode))) = '1') then
-            node_bus_off_xhdl13 <= '0' ; 
-         else
-            if (to_std_logic(tx_err_cnt_xhdl16 >= b"100000000") = '1') then
-               node_bus_off_xhdl13 <= '1' ; 
-=======
-         node_bus_off_buf <= '0';    
+         node_bus_off_buf <= '0'; 
       elsif rising_edge(clk) then
          if (((to_std_logic((rx_err_cnt_buf = b"000000000") and (tx_err_cnt_buf = b"000000000")) and (not reset_mode))) = '1') then
-            node_bus_off_buf <= '0' ;    
+            node_bus_off_buf <= '0';
          else
             if (to_std_logic(tx_err_cnt_buf >= b"100000000") = '1') then
-               node_bus_off_buf <= '1' ;    
->>>>>>> 809e3f8feec04baf8283bcf71405a395cd823894
+               node_bus_off_buf <= '1';
             end if;
          end if;
       end if;
@@ -2807,9 +2272,9 @@ begin
       elsif rising_edge(clk) then
             if (sample_point = '1') then
                if (((sampled_bit and bus_free_cnt_en) and to_std_logic(bus_free_cnt < "1010")) = '1') then
-                  bus_free_cnt <= bus_free_cnt + "0001" ; 
+                  bus_free_cnt <= bus_free_cnt + "0001";
                else
-                  bus_free_cnt <= "0000" ; 
+                  bus_free_cnt <= "0000";
                end if;
          end if;
       end if;
@@ -2821,15 +2286,10 @@ begin
          bus_free_cnt_en <= '0'; 
       elsif rising_edge(clk) then
          if ((((not reset_mode) and reset_mode_q) or (node_bus_off_q and (not reset_mode))) = '1') then
-            bus_free_cnt_en <= '1' ; 
+            bus_free_cnt_en <= '1';
          else
-<<<<<<< HEAD
-            if ((((sample_point and sampled_bit) and to_std_logic(bus_free_cnt = "1010")) and (not node_bus_off_xhdl13)) = '1') then
-               bus_free_cnt_en <= '0' ; 
-=======
             if ((((sample_point and sampled_bit) and to_std_logic(bus_free_cnt = "1010")) and (not node_bus_off_buf)) = '1') then
-               bus_free_cnt_en <= '0' ;    
->>>>>>> 809e3f8feec04baf8283bcf71405a395cd823894
+               bus_free_cnt_en <= '0';
             end if;
          end if;
       end if;
@@ -2841,9 +2301,9 @@ begin
          bus_free <= '0'; 
       elsif rising_edge(clk) then
             if (((sample_point and sampled_bit) and to_std_logic(bus_free_cnt = "1010") and waiting_for_bus_free) = '1') then
-               bus_free <= '1' ; 
+               bus_free <= '1';
             else
-               bus_free <= '0' ; 
+               bus_free <= '0';
             end if;
       end if;
    end process;
@@ -2853,15 +2313,10 @@ begin
       if (rst = '1') then
          waiting_for_bus_free <= '1'; 
       elsif rising_edge(clk) then
-<<<<<<< HEAD
-            if ((bus_free and (not node_bus_off_xhdl13)) = '1') then
-               waiting_for_bus_free <= '0' ; 
-=======
             if ((bus_free and (not node_bus_off_buf)) = '1') then
-               waiting_for_bus_free <= '0' ;    
->>>>>>> 809e3f8feec04baf8283bcf71405a395cd823894
+               waiting_for_bus_free <= '0';
             elsif ((node_bus_off_q and (not reset_mode)) = '1') then
-                  waiting_for_bus_free <= '1' ; 
+                  waiting_for_bus_free <= '1';
             end if;
       end if;
    end process;
