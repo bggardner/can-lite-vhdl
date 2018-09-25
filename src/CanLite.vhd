@@ -53,8 +53,8 @@ entity CanLite is
     generic (
         BAUD_RATE_PRESCALAR         : positive range 1 to 64 := 1;
         SYNCHRONIZATION_JUMP_WIDTH  : positive range 1 to 4 := 3;
-        TIME_SEGMENT_1              : positive range 1 to 16 := 8;
-        TIME_SEGMENT_2              : positive range 1 to 8 := 3;
+        TIME_SEGMENT_1              : positive range 1 to 16 := 9;
+        TIME_SEGMENT_2              : positive range 1 to 8 := 2;
         TRIPLE_SAMPLING             : boolean := true
     );
     port (
