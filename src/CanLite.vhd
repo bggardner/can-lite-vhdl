@@ -58,22 +58,22 @@ entity CanLite is
         TRIPLE_SAMPLING             : boolean := true
     );
     port (
-        Clock               : in  std_logic; --! Base clock for CAN timing (24MHz recommended)
-        Reset_n             : in  std_logic; --! Active-low reset
+        Clock               : in  std_logic; -- Base clock for CAN timing (24MHz recommended)
+        Reset_n             : in  std_logic; -- Active-low reset
         
-        CanRx               : in  std_logic; --! RX input from CAN transceiver
-        CanTx               : out std_logic; --! TX output to CAN transceiver
+        CanRx               : in  std_logic; -- RX input from CAN transceiver
+        CanTx               : out std_logic; -- TX output to CAN transceiver
 
-        RxFrame             : out CanBus.Frame; --! To RX FIFO
-        RxFifoWriteEnable   : out std_logic; --! To RX FIFO
-        RxFifoFull          : in  std_logic; --! From RX FIFO
+        RxFrame             : out CanBus.Frame; -- To RX FIFO
+        RxFifoWriteEnable   : out std_logic; -- To RX FIFO
+        RxFifoFull          : in  std_logic; -- From RX FIFO
                 
-        TxFrame             : in  CanBus.Frame; --! From TX FIFO
-        TxFifoReadEnable    : out std_logic; --! To TX FIFO
-        TxFifoEmpty         : in std_logic; --! From TX FIFO
-        TxAck               : out std_logic; --! High pulse when a message was successfully transmitted
+        TxFrame             : in  CanBus.Frame; -- From TX FIFO
+        TxFifoReadEnable    : out std_logic; -- To TX FIFO
+        TxFifoEmpty         : in std_logic; -- From TX FIFO
+        TxAck               : out std_logic; -- High pulse when a message was successfully transmitted
         
-        Status              : out CanBus.Status --! See Can_pkg.vhdl
+        Status              : out CanBus.Status -- See Can_pkg.vhdl
     );
 end entity CanLite;
 
@@ -122,7 +122,7 @@ architecture Behavioral of CanLite is
     end component CanLiteBitStreamProcessor;
 
     component CanLiteBitTimingLogic
-        generic ( --! Default configuration register values
+        generic ( -- Default configuration register values
             BAUD_RATE_PRESCALAR        : positive range 1 to 64 := 1;
             SYNCHRONIZATION_JUMP_WIDTH : positive range 1 to 4 := 3;
             TIME_SEGMENT_1             : positive range 1 to 16 := 8;
@@ -153,12 +153,12 @@ architecture Behavioral of CanLite is
         );
     end component CanLiteBitTimingLogic;
 
-    signal rst                      :  std_logic; --! Not Reset_n (asynchronous)
-    signal reset_mode               :  std_logic; --! Synchronous reset pulse
-    signal CanRx_q, CanRx_q_q, CanTx_q  :  std_logic; --! Registered CAN signals
-    signal RxFifoWriteEnable_buf, TxFifoReadEnable_buf : std_logic; --! Output buffers
-    signal TxRequest                :  std_logic; --! New message ready for bit stream processor
-    signal TxPending                :  std_logic; --! To make sure frame gets sent, even after bus off
+    signal rst                      :  std_logic; -- Not Reset_n (asynchronous)
+    signal reset_mode               :  std_logic; -- Synchronous reset pulse
+    signal CanRx_q, CanRx_q_q, CanTx_q  :  std_logic; -- Registered CAN signals
+    signal RxFifoWriteEnable_buf, TxFifoReadEnable_buf : std_logic; -- Output buffers
+    signal TxRequest                :  std_logic; -- New message ready for bit stream processor
+    signal TxPending                :  std_logic; -- To make sure frame gets sent, even after bus off
   
    -- Output signals from CanLiteBitTimingLogic module 
     signal sample_point             :  std_logic;
@@ -208,7 +208,7 @@ begin
         CanBus.STATE_ERROR_ACTIVE;
     Status.ErrorWarning <= error_status;
 
-    --! Reset pulse required for bit stream processor
+    -- Reset pulse required for bit stream processor
     process (Clock, Reset_n)
     begin
         if Reset_n = '0' then
@@ -222,7 +222,7 @@ begin
         end if;
     end process;
     
-    --! Double-buffer CAN RX signal
+    -- Double-buffer CAN RX signal
     process (Clock, Reset_n)
     begin
         if (Reset_n = '0') then
@@ -234,7 +234,7 @@ begin
         end if;
     end process;
 
-    --! Tx FIFO control
+    -- Tx FIFO control
     process (Clock, Reset_n)
     begin
         if Reset_n = '0' then
@@ -243,19 +243,19 @@ begin
             TxPending <= '0';
         elsif rising_edge(Clock) then
             if (
-                TxRequest = '1' or --! Active request
-                need_to_tx = '1' or --! Processing request 
-                TxFifoReadEnable_buf = '1' --! Single pulse
+                TxRequest = '1' or -- Active request
+                need_to_tx = '1' or -- Processing request 
+                TxFifoReadEnable_buf = '1' -- Single pulse
             ) then
                 TxFifoReadEnable_buf <= '0';
-            elsif TxFifoEmpty = '0' then --! New request
+            elsif TxFifoEmpty = '0' then -- New request
                 TxFifoReadEnable_buf <= '1';
             end if;
-            if TxFifoReadEnable_buf = '1' then --! Delay by one clock cycle
+            if TxFifoReadEnable_buf = '1' then -- Delay by one clock cycle
                 TxRequest <= '1';
-            elsif need_to_tx = '1' then --! Request acknowledged
+            elsif need_to_tx = '1' then -- Request acknowledged
                 TxRequest <= '0';
-            elsif TxPending = '1' then --! Resend after bus off
+            elsif TxPending = '1' then -- Resend after bus off
                 TxRequest <= '1';
             end if;
             if TxRequest = '1' then
@@ -715,7 +715,7 @@ begin
          else
             if (enable = '1') then
                if (NextBit = '1') then
-                  Crc_q <= (Crc_q(13 downto 0) & '0') xor b"100010110011001"; --! CRC-15-CAN: x"4599"
+                  Crc_q <= (Crc_q(13 downto 0) & '0') xor b"100010110011001"; -- CRC-15-CAN: x"4599"
                else
                   Crc_q <= (Crc_q(13 downto 0) & '0'); 
                end if;
