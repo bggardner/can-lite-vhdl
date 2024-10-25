@@ -11,7 +11,7 @@ Example:
 * Baud Rate: 24000000 / 2 / 1 / (8 + 3 + 1) = 1000000 = 1 Mbps
 * Sample Point: (8 + 1) / (8 + 3 + 1) = 75%
 
-`src/CanBus_pkg.vhd` defines some data types to abstract bit ordering and procedures for use in testbenches.
+`src/CanBus_pkg.vhd` defines some data types, functions, and standard CANopen constants, as well as procedures for use in testbenches.
 
 `src/CanLite.vhd` contains the top-level VHDL module (CanLite), as well as the submodules it depends on.
 

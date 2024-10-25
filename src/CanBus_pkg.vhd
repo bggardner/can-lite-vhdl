@@ -27,6 +27,12 @@ package CanBus is
         ErrorWarning    : std_logic; -- '0' = (< 97 errors), '1' = (> 96 errors)
         Overflow        : std_logic; -- '0' = (no overflow), '1' = RX FIFO overflow
     end record Status;
+    
+    ------------------------------------------------------------
+    -- FUNCTIONS
+    ------------------------------------------------------------
+    function to_std_logic_vector(constant DATA_BYTES : DataBytes) return std_logic_vector;
+    function to_DataBytes(constant SLV : std_logic_vector(63 downto 0)) return DataBytes;
 
     ------------------------------------------------------------
     -- TESTBENCH PROCEDURES
@@ -50,6 +56,27 @@ package CanBus is
 end package CanBus;
 
 package body CanBus is
+    ------------------------------------------------------------
+    -- FUNCTIONS
+    ------------------------------------------------------------
+    function to_std_logic_vector(constant DATA_BYTES : DataBytes) return std_logic_vector is
+        variable Slv : std_logic_vector(63 downto 0);
+    begin
+        for Byte in 0 to 7 loop
+            Slv((Byte + 1) * 8 - 1 downto Byte * 8) := DATA_BYTES(0);
+        end loop;
+        return Slv;
+    end function to_std_logic_vector;
+    
+    function to_DataBytes(constant SLV : std_logic_vector(63 downto 0)) return DataBytes is
+        variable Data : DataBytes;
+    begin
+        for Byte in 0 to 7 loop
+            Data(Byte) := SLV((Byte + 1) * 8 - 1 downto Byte * 8);
+        end loop;
+        return Data;
+    end function to_DataBytes;
+
     ------------------------------------------------------------
     -- TESTBENCH PROCEDURES
     ------------------------------------------------------------
