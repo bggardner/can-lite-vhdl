@@ -63,7 +63,7 @@ package body CanBus is
         variable Slv : std_logic_vector(63 downto 0);
     begin
         for Byte in 0 to 7 loop
-            Slv((Byte + 1) * 8 - 1 downto Byte * 8) := DATA_BYTES(0);
+            Slv((Byte + 1) * 8 - 1 downto Byte * 8) := DATA_BYTES(Byte);
         end loop;
         return Slv;
     end function to_std_logic_vector;
