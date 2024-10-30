@@ -31,6 +31,12 @@ package CanBus is
     ------------------------------------------------------------
     -- FUNCTIONS
     ------------------------------------------------------------
+    function is_match(
+        constant FRAME : Frame;
+        constant FILTER_ID : std_logic_vector(28 downto 0) := (others => '0');
+        constant FILTER_MASK : std_logic_vector(28 downto 0) := (others => '0');
+        constant FILTER_IDE : std_logic := '0' -- '0' = match 11-bit ID, '1' = match 29-bit ID
+    ) return boolean;
     function to_std_logic_vector(constant DATA_BYTES : DataBytes) return std_logic_vector;
     function to_DataBytes(constant SLV : std_logic_vector(63 downto 0)) return DataBytes;
 
@@ -51,7 +57,8 @@ package CanBus is
         signal FifoWriteEnable : in std_logic;
         variable Frame : out Frame;
         constant FILTER_ID : std_logic_vector(28 downto 0) := (others => '0');
-        constant FILTER_MASK : std_logic_vector(28 downto 0) := (others => '0')
+        constant FILTER_MASK : std_logic_vector(28 downto 0) := (others => '0');
+        constant FILTER_IDE : std_logic := '0' -- '0' = match 11-bit ID, '1' = match 29-bit ID
     );
 end package CanBus;
 
@@ -59,6 +66,22 @@ package body CanBus is
     ------------------------------------------------------------
     -- FUNCTIONS
     ------------------------------------------------------------
+    function is_match(
+        constant FRAME : Frame;
+        constant FILTER_ID : std_logic_vector(28 downto 0) := (others => '0');
+        constant FILTER_MASK : std_logic_vector(28 downto 0) := (others => '0');
+        constant FILTER_IDE : std_logic := '0' -- '0' = match 11-bit ID, '1' = match 29-bit ID
+    ) return boolean is
+        variable ID_MASK : std_logic_vector(28 downto 0);
+    begin
+        if FILTER_IDE = '0' then
+            ID_MASK := FILTER_MASK and "00000000000000000011111111111";
+        else
+            ID_MASK := FILTER_MASK;
+        end if;
+        return (FRAME.Ide = FILTER_IDE) and ((FRAME.Id and ID_MASK) = (FILTER_ID and ID_MASK));
+    end function is_match;
+
     function to_std_logic_vector(constant DATA_BYTES : DataBytes) return std_logic_vector is
         variable Slv : std_logic_vector(63 downto 0);
     begin
@@ -103,12 +126,13 @@ package body CanBus is
         signal FifoWriteEnable : in std_logic;
         variable Frame : out Frame;
         constant FILTER_ID : std_logic_vector(28 downto 0) := (others => '0');
-        constant FILTER_MASK : std_logic_vector(28 downto 0) := (others => '0')
+        constant FILTER_MASK : std_logic_vector(28 downto 0) := (others => '0');
+        constant FILTER_IDE : std_logic := '0' -- '0' = match 11-bit ID, '1' = match 29-bit ID
     ) is
     begin
         loop
             wait until FifoWriteEnable = '1' and rising_edge(Clock);
-            if (FifoFrame.Id and FILTER_MASK) = (FILTER_ID and FILTER_MASK) then
+            if is_match(FifoFrame, FILTER_ID, FILTER_MASK, FILTER_IDE) then
                 Frame := FifoFrame;
                 exit;
             end if;
